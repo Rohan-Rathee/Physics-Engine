@@ -1,0 +1,18 @@
+{
+  "name": "physics-engine",
+  "version": "1.0.0",
+  "dependencies": [
+    "glfw3",
+    "vulkan-headers",
+    "vulkan-loader",
+    "glm",
+    "shader-slang",
+    "stb",
+    "ktx",
+    "tinygltf",
+    "tinyobjloader",
+    "nlohmann-json",
+    "openal-soft",
+    "zstd"
+  ]
+}
