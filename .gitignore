@@ -1,0 +1,10 @@
+build/
+out/
+*.exe
+*.obj
+*.pdb
+*.ilk
+*.log
+.vscode/settings.json
+.vscode/extensions.json
+vcpkg/installed/
