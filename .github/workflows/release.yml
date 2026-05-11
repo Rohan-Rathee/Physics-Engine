@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: ${{ env.VCPKG_VERSION }}
+
+    - name: Install dependencies
+      run: vcpkg install --triplet x64-windows
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{github.workspace}}/vcpkg/installed/x64-windows"
+
+    - name: Build
+      run: cmake --build build --config Release --target main
+
+    - name: Package release
+      run: |
+        Compress-Archive -Path build\Release\main.exe, Shaders\, Textures\ -DestinationPath Physics-Engine-${{ github.ref_name }}.zip
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Physics Engine ${{ github.ref_name }}
+        body: |
+          Automated release ${{ github.ref_name }}
+
+          ## Changes
+          See commit history for details.
+
+          ## Installation
+          Download and extract the zip, then run `main.exe`.
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./Physics-Engine-${{ github.ref_name }}.zip
+        asset_name: Physics-Engine-${{ github.ref_name }}.zip
+        asset_content_type: application/zip
