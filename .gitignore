@@ -1,10 +1,11 @@
 build/
 out/
+glad/
+.vscode/
 *.exe
 *.obj
 *.pdb
 *.ilk
 *.log
-.vscode/settings.json
-.vscode/extensions.json
 vcpkg/installed/
+vcpkg/
