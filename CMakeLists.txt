@@ -18,16 +18,10 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/glad/include")
 
 # Add executables
 add_executable(main src/main.cpp glad/src/glad.c)
-add_executable(main_opengl src/main_opengl.cpp glad/src/glad.c)
 
 # Include directories for header-only libraries
 target_include_directories(main PRIVATE 
     "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows/include"
-)
-
-target_include_directories(main_opengl PRIVATE 
-    "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/glad/include"
 )
 
 # Link libraries
@@ -36,8 +30,4 @@ target_link_libraries(main PRIVATE
     Vulkan::Vulkan 
     glm::glm
 )
-
-target_link_libraries(main_opengl PRIVATE 
-    glfw 
-    opengl32
-)
+ 
