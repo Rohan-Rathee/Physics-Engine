@@ -7,5 +7,6 @@ glad/
 *.pdb
 *.ilk
 *.log
+*.ps1
 vcpkg/installed/
 vcpkg/
