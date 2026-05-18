@@ -10,3 +10,4 @@ glad/
 *.ps1
 vcpkg/installed/
 vcpkg/
+decentralized/
