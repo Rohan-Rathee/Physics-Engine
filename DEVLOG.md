@@ -11,10 +11,6 @@ A C++ physics engine project using OpenGL, GLFW, and GLM for 3D graphics renderi
 - **Build System**: Set up CMakeLists.txt with proper include paths and linking
 - **Shaders**: Basic vertex and fragment shaders for triangle rendering
 
-### Repo Cleanup (May 16, 2026)
-- **Submodule Removal**: Removed the vcpkg submodule to keep the repo lightweight
-- **Ignore Rules**: Added ignores for generated/output folders (build, glad, .vscode, vcpkg)
-
 ### Code Development
 - **Main Application**: `main.cpp` - OpenGL window creation, shader loading, triangle rendering
 - **Shader Class**: `shader.h` - Utility class for loading, compiling, and using GLSL shaders
