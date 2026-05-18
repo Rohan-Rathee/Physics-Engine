@@ -13,17 +13,27 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find packages (provided by vcpkg toolchain)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
-find_package(Vulkan REQUIRED)
 find_package(glm CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 
 # Add executables
-add_executable(main src/main.cpp)
+add_executable(main 
+    src/main.cpp
+    src/core/engine.cpp
+    src/core/time_manager.cpp
+    src/systems/input_system.cpp
+    src/systems/render_system.cpp
+    src/systems/window_system.cpp
+    src/scene/entity.cpp
+    src/scene/scene.cpp
+    src/components/transform.cpp
+)
 
 # Link libraries
 target_link_libraries(main PRIVATE 
     glfw
     glad::glad
-    Vulkan::Vulkan
     glm::glm
+    assimp::assimp
 )
  

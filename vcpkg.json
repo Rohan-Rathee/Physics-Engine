@@ -4,16 +4,14 @@
   "dependencies": [
     "glad",
     "glfw3",
-    "vulkan-headers",
-    "vulkan-loader",
     "glm",
-    "shader-slang",
     "stb",
     "ktx",
     "tinygltf",
     "tinyobjloader",
     "nlohmann-json",
     "openal-soft",
-    "zstd"
+    "zstd",
+    "assimp"
   ]
 }
