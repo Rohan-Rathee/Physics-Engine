@@ -13,7 +13,7 @@ uniform float fogEnd;
 void main()
 {  
     // 1. Sample and blend the two textures
-    vec4 texColor = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), 0.2);
+    vec4 texColor = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), 1);
 
     // 2. Calculate fog factor
     float distance  = length(vFragPos);

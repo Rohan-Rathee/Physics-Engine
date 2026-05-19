@@ -3,19 +3,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-int width, height, channels;
-unsigned char* data = stbi_load("Textures/terrain.png", &width, &height, &channels, 1);
-
-float getHeightFromTexture(int x, int z) {
-    if (x < 0 || x >= width || z < 0 || z >= height) {
-        return 0.0f; // Out of bounds
-    }
-    unsigned char pixelValue = data[z * width + x];
-    return pixelValue / 255.0f * 255.0f; // Scale to [0, 255]
-}
 
 const float cubeVertices[] = {    // Back face (z = -0.5) — FIXED (reversed)
-    /**-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
      0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
      0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -44,7 +34,7 @@ const float cubeVertices[] = {    // Back face (z = -0.5) — FIXED (reversed)
      0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
      0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
      0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,**/
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
     // Bottom face (y = -0.5) — OK
     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
@@ -76,11 +66,11 @@ const glm::vec3 cubePositions[] = {
     glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
-RenderSystem::RenderSystem(const std::string& vertexPath, const std::string& fragmentPath,
-                           unsigned int width, unsigned int height)
-    : shader(nullptr), VAO(0), VBO(0), 
+RenderSystem::RenderSystem(const std::string& vertexPath, const std::string& fragmentPath, unsigned int width, unsigned int height)
+    : shader(nullptr), modelShader(nullptr), VAO(0), VBO(0), 
       texture1(0), texture2(0), screenWidth(width), screenHeight(height),
-      vertexPath(vertexPath), fragmentPath(fragmentPath) {}
+      vertexPath(vertexPath), fragmentPath(fragmentPath),
+      modelVertexPath("Shaders/model_vertex.glsl"), modelFragmentPath("Shaders/model_fragment.glsl") {}
 
 RenderSystem::~RenderSystem() {
     glDeleteVertexArrays(1, &VAO);
@@ -108,24 +98,30 @@ bool RenderSystem::isInFrustum(const glm::vec3& pos) {
 
 bool RenderSystem::initialize() {
 
-    glEnable(GL_CULL_FACE);
+    /**glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK); 
-    glFrontFace(GL_CCW);
+    glFrontFace(GL_CCW);*/
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_MULTISAMPLE);  // Enable multisampling
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     shader = std::make_unique<Shader>(vertexPath.c_str(), fragmentPath.c_str());
     
     glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture1);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load("Textures/container.jpg", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("Textures/genisys_prototype_elevator_light_emission.png", &width, &height, &nrChannels, 0);
     if (data) {
         GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glTexImage2DMultisample(GL_TEXTURE_2D, 4, format, width, height, GL_TRUE);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
         std::cerr << "Failed to load texture1" << std::endl;
@@ -134,17 +130,17 @@ bool RenderSystem::initialize() {
     stbi_image_free(data);
 
     glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture2);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     stbi_set_flip_vertically_on_load(true);
-    data = stbi_load("Textures/awesomeface.png", &width, &height, &nrChannels, 0);
+    data = stbi_load("Textures/prototype_grid_grey.png", &width, &height, &nrChannels, 0);
     if (data) {
         GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glTexImage2DMultisample(GL_TEXTURE_2D, 4, format, width, height, GL_TRUE);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
         std::cerr << "Failed to load texture2" << std::endl;
@@ -173,9 +169,16 @@ bool RenderSystem::initialize() {
         glVertexAttribDivisor(3 + i, 1); // 1 = advance per instance, not per vertex
     }
 
+    
     shader->use();
     shader->setInt("texture1", 0);
     shader->setInt("texture2", 1);
+
+    // Create model shader
+    modelShader = std::make_unique<Shader>(modelVertexPath.c_str(), modelFragmentPath.c_str());
+
+    // Load initial model
+    loadModel("models/procedural_city_3.glb", glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
     return true;
 }
@@ -197,25 +200,50 @@ void RenderSystem::render(float currentFrame, const glm::mat4& view, const glm::
     shader->setFloat("fogEnd", 500.0f);
 
     glm::mat4 vp = projection * view;
-    extractFrustumPlanes(vp);
-
-    instanceMatrices.clear();
-    for (unsigned int i = 0; i < 7000; i+=4) {
-        for (unsigned int j = 0; j < 7000; j+=4) {
-            glm::vec3 pos(i * 0.25f, getHeightFromTexture(i, j) * 1.0f, j * 0.25f);
-            if (isInFrustum(pos)) {
-                glm::mat4 model = glm::mat4(1.0f);
-                model = glm::translate(model, pos);
-                instanceMatrices.push_back(model);
-            }
+    // Render all loaded models with model shader
+    if (modelShader) {
+        modelShader->use();
+        modelShader->setMat4("view", view);
+        modelShader->setMat4("projection", projection);
+        
+        for (auto& modelPair : models) {
+            modelShader->setMat4("model", modelPair.second);
+            modelPair.first->draw(*modelShader);
         }
     }
-    
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, instanceMatrices.size() * sizeof(glm::mat4), instanceMatrices.data(), GL_DYNAMIC_DRAW);
-
-    glBindVertexArray(VAO);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceMatrices.size());
-   
 }
 
+void RenderSystem::loadModel(const std::string& modelPath, const glm::vec3& position, const glm::vec3& scale) {
+    try {
+        auto newModel = std::make_unique<Model>(modelPath);
+        
+        // Create model matrix with position and scale
+        glm::mat4 modelMatrix = glm::mat4(1.0f);
+        modelMatrix = glm::translate(modelMatrix, position);
+        modelMatrix = glm::scale(modelMatrix, scale);
+        
+        models.push_back({std::move(newModel), modelMatrix});
+        std::cout << "Model loaded: " << modelPath << " (Total models: " << models.size() << ")" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to load model '" << modelPath << "': " << e.what() << std::endl;
+    }
+}
+
+void RenderSystem::clearModels() {
+    models.clear();
+    std::cout << "All models cleared" << std::endl;
+}
+
+void RenderSystem::setModelTransform(size_t modelIndex, const glm::vec3& position, const glm::vec3& scale, float rotationAngle, const glm::vec3& rotationAxis) {
+    if (modelIndex >= models.size()) {
+        std::cerr << "Invalid model index: " << modelIndex << std::endl;
+        return;
+    }
+    
+    glm::mat4 modelMatrix = glm::mat4(1.0f);
+    modelMatrix = glm::translate(modelMatrix, position);
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(rotationAngle), rotationAxis);
+    modelMatrix = glm::scale(modelMatrix, scale);
+    
+    models[modelIndex].second = modelMatrix;
+}

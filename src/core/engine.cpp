@@ -1,6 +1,9 @@
 #include "engine.h"
 #include <iostream>
 
+double lastTime = glfwGetTime();
+int frameCount = 0;
+
 Engine::Engine(unsigned int width, unsigned int height, const std::string& title)
     : screenWidth(width), screenHeight(height), running(true) {
     windowSystem = std::make_unique<WindowSystem>(width, height, title);
@@ -37,6 +40,14 @@ void Engine::run() {
         float deltaTime = timeManager->getDeltaTime();
         float currentTime = timeManager->getCurrentTime();
         
+        frameCount++;
+
+        if (currentTime - lastTime >= 1.0) {
+            std::string title = "Physics Engine | FPS: " + std::to_string(frameCount);
+            glfwSetWindowTitle(windowSystem->getGLFWWindow(), title.c_str());
+            frameCount = 0;
+            lastTime = currentTime;
+        }
         // Handle input
         inputSystem->setDeltaTime(deltaTime);
         inputSystem->processInput();
@@ -49,7 +60,7 @@ void Engine::run() {
             glm::radians(camera->Zoom),
             (float)screenWidth / (float)screenHeight,
             0.1f,
-            500.0f
+            1000000.0f
         );
         glm::mat4 view = camera->GetViewMatrix();
         

@@ -12,6 +12,7 @@
     "nlohmann-json",
     "openal-soft",
     "zstd",
-    "assimp"
+    "assimp",
+    "curl"
   ]
 }
