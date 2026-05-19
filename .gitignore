@@ -11,3 +11,4 @@ glad/
 vcpkg/installed/
 vcpkg/
 decentralized/
+vcpkg_installed/

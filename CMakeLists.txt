@@ -15,6 +15,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
+find_package(CURL CONFIG REQUIRED)
 
 # Add executables
 add_executable(main 
@@ -27,6 +28,7 @@ add_executable(main
     src/scene/entity.cpp
     src/scene/scene.cpp
     src/components/transform.cpp
+    src/utils/model_loader.cpp
 )
 
 # Link libraries
@@ -35,5 +37,10 @@ target_link_libraries(main PRIVATE
     glad::glad
     glm::glm
     assimp::assimp
+    CURL::libcurl
 )
- 
+
+# Add include directories for header-only libraries
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include")
+    target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include")
+endif()

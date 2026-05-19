@@ -6,7 +6,7 @@ layout (location = 3) in mat4 instanceMatrix;
 
 uniform mat4 view;
 uniform mat4 projection;
-
+uniform vec2 uTexScale;
 out vec3 vFragPos;
 out vec2 TexCoord;
 

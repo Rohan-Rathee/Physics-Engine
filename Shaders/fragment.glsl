@@ -13,7 +13,7 @@ uniform float fogEnd;
 void main()
 {  
 
-    vec4 texColor = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), 0.2);
+    vec4 texColor = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), 1);
 
 
     float distance  = length(vFragPos);
