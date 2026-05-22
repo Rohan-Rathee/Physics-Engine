@@ -3,7 +3,7 @@
 
 int main() {
     try {
-        Engine engine(1280, 720, "Physics Engine - Decentralized");
+        Engine engine(1280, 720, "Physics Engine");
         
         if (!engine.initialize()) {
             std::cerr << "Failed to initialize engine" << std::endl;
@@ -14,7 +14,7 @@ int main() {
         engine.shutdown();
         
         return 0;
-    }
+    } 
     catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << std::endl;
         return -1;

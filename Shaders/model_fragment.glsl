@@ -4,25 +4,44 @@ out vec4 FragColor;
 in vec2 TexCoord;
 in vec3 Normal;
 in vec3 FragPos;
+in vec4 FragPosLightSpace;
 
 uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_specular1;
+uniform sampler2D shadowMap;
+uniform vec3 lightDir;
+
+float calculateShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    
+    if(projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || 
+       projCoords.y < 0.0 || projCoords.y > 1.0)
+        return 0.0;
+    
+    float closestDepth = texture(shadowMap, projCoords.xy).r; 
+    float currentDepth = projCoords.z;
+    float bias = 0.001;
+    //bias = max(bias * (5.0 - max(tan(acos(dot(normal, lightDir))), 0.0005)), 0.0005);
+    
+    return (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
+}
+
 
 void main()
 {
-    // Sample the diffuse texture
+    vec3 normal = normalize(Normal);
     vec4 diffuseColor = texture(texture_diffuse1, TexCoord);
     
-    // If the texture lookup fails or is transparent, use a default color
     if (diffuseColor.a < 0.1) {
         discard;
     }
     
-    // Simple lighting
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-    float diff = max(dot(norm, lightDir), 0.2);
+    float shadow = calculateShadow(FragPosLightSpace, normal, lightDir);
+    float lighting = (1.0 - shadow);
+    vec3 result = diffuseColor.rgb * max(lighting, 0.3);
     
-    vec3 result = diffuseColor.rgb * diff;
     FragColor = vec4(result, diffuseColor.a);
+    //FragColor = vec4(vec3(shadow), 1.0);
 }

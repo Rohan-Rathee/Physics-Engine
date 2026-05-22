@@ -8,6 +8,24 @@
 
 using namespace std;
 
+// Helper function to create a default white texture
+unsigned int CreateWhiteTexture()
+{
+    unsigned char whitePixel[] = {255, 255, 255, 255}; // RGBA white
+    
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+    return textureID;
+}
+
 // Helper function to load texture from embedded data (for GLB/GLTF)
 unsigned int TextureFromEmbeddedData(const aiTexel *data, unsigned int width, unsigned int height)
 {
@@ -219,7 +237,9 @@ void Model::draw(Shader &shader)
 void Model::loadModel(const std::string &path)
 {
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+    unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | 
+                         aiProcess_JoinIdenticalVertices | aiProcess_SortByPType;
+    const aiScene* scene = importer.ReadFile(path, flags);
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
         std::cerr << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
@@ -294,6 +314,16 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     }
 
+    // If no textures were loaded, add a default white texture so the model isn't black
+    if(textures.empty())
+    {
+        texture defaultTexture;
+        defaultTexture.id = CreateWhiteTexture();
+        defaultTexture.type = "texture_diffuse";
+        defaultTexture.path = "default_white";
+        textures.push_back(defaultTexture);
+    }
+
     return Mesh(vertices, indices, textures);
 }
 
@@ -325,4 +355,39 @@ std::vector<texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
         }
     }
     return textures;
+}
+
+void ModelLoader::loadModel(const std::string& modelPath, const glm::vec3& position, const glm::vec3& scale) {
+    try {
+        auto newModel = std::make_unique<Model>(modelPath);
+        
+        // Create model matrix with position and scale
+        glm::mat4 modelMatrix = glm::mat4(1.0f);
+        modelMatrix = glm::translate(modelMatrix, position);
+        modelMatrix = glm::scale(modelMatrix, scale);
+        
+        models.push_back({std::move(newModel), modelMatrix});
+        std::cout << "Model loaded: " << modelPath << " (Total models: " << models.size() << ")" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to load model '" << modelPath << "': " << e.what() << std::endl;
+    }
+}
+
+void ModelLoader::clearModels() {
+    models.clear();
+    std::cout << "All models cleared" << std::endl;
+}
+
+void ModelLoader::setModelTransform(size_t modelIndex, const glm::vec3& position, const glm::vec3& scale, float rotationAngle, const glm::vec3& rotationAxis) {
+    if (modelIndex >= models.size()) {
+        std::cerr << "Invalid model index: " << modelIndex << std::endl;
+        return;
+    }
+    
+    glm::mat4 modelMatrix = glm::mat4(1.0f);
+    modelMatrix = glm::translate(modelMatrix, position);
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(rotationAngle), rotationAxis);
+    modelMatrix = glm::scale(modelMatrix, scale);
+    
+    models[modelIndex].transform = modelMatrix;
 }

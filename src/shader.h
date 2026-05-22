@@ -11,12 +11,25 @@
 #include<fstream>
 #include<sstream>
 #include<iostream>
+#include<filesystem>
+#include<chrono>
 
 class Shader{
 public:
     unsigned int ID;
+    std::string vertexPath;
+    std::string fragmentPath;
+    std::filesystem::file_time_type vertexModTimeRaw;
+    std::filesystem::file_time_type fragmentModTimeRaw;
 
-    Shader(const char* vertexPath, const char* fragmentPath){
+    Shader(const char* vPath, const char* fPath){
+        vertexPath = vPath;
+        fragmentPath = fPath;
+        updateModificationTimes();
+        compileShaders();
+    };
+
+    void compileShaders(){
         std::string vertexCode;
         std::string fragmentCode;
         std::ifstream vShaderFile;
@@ -65,7 +78,39 @@ public:
 
         glDeleteShader(vertex);
         glDeleteShader(fragment);
-    };
+    }
+
+    void updateModificationTimes(){
+        try{
+            vertexModTimeRaw = std::filesystem::last_write_time(vertexPath);
+            fragmentModTimeRaw = std::filesystem::last_write_time(fragmentPath);
+        } catch(const std::exception& e){
+            std::cout << "ERROR::SHADER::FAILED_TO_GET_MOD_TIME: " << e.what() << std::endl;
+        }
+    }
+
+    bool hasShaderChanged(){
+        try{
+            auto vNewModTime = std::filesystem::last_write_time(vertexPath);
+            auto fNewModTime = std::filesystem::last_write_time(fragmentPath);
+            
+            return (vNewModTime != vertexModTimeRaw || fNewModTime != fragmentModTimeRaw);
+        } catch(const std::exception& e){
+            std::cout << "ERROR::SHADER::FAILED_TO_CHECK_MOD_TIME: " << e.what() << std::endl;
+            return false;
+        }
+    }
+
+    void hotReload(){
+        if(hasShaderChanged()){
+            std::cout << "SHADER::HOT_RELOAD: Reloading shaders: " << vertexPath << " and " << fragmentPath << std::endl;
+            unsigned int oldID = ID;
+            compileShaders();
+            updateModificationTimes();
+            glDeleteProgram(oldID);
+            std::cout << "SHADER::HOT_RELOAD: Shaders reloaded successfully!" << std::endl;
+        }
+    }
     
     void use() const
     { 

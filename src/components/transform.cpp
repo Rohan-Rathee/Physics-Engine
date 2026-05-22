@@ -15,3 +15,4 @@ glm::mat4 Transform::getMatrix() const {
     model = glm::scale(model, scale);
     return model;
 }
+
