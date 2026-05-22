@@ -6,11 +6,13 @@ int frameCount = 0;
 
 Engine::Engine(unsigned int width, unsigned int height, const std::string& title)
     : screenWidth(width), screenHeight(height), running(true) {
+
     windowSystem = std::make_unique<WindowSystem>(width, height, title);
     timeManager = std::make_unique<TimeManager>();
     camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 3.0f));
     renderSystem = std::make_unique<RenderSystem>("Shaders/vertex.glsl", "Shaders/fragment.glsl", width, height);
     scene = std::make_unique<Scene>("MainScene");
+
 }
 
 Engine::~Engine() {
@@ -18,6 +20,7 @@ Engine::~Engine() {
 }
 
 bool Engine::initialize() {
+
     if (!windowSystem->initialize()) {
         std::cerr << "Failed to initialize window system" << std::endl;
         return false;
@@ -28,7 +31,9 @@ bool Engine::initialize() {
         return false;
     }
     
+
     inputSystem = std::make_unique<InputSystem>(windowSystem->getGLFWWindow(), *camera, screenWidth, screenHeight);
+    inputSystem->setRenderSystem(renderSystem.get());
     
     return true;
 }
@@ -36,12 +41,13 @@ bool Engine::initialize() {
 void Engine::run() {
     while (!windowSystem->shouldClose() && running) {
 
+
         timeManager->update();
         float deltaTime = timeManager->getDeltaTime();
         float currentTime = timeManager->getCurrentTime();
         
-        frameCount++;
 
+        frameCount++;       
         if (currentTime - lastTime >= 1.0) {
             std::string title = "Physics Engine | FPS: " + std::to_string(frameCount);
             glfwSetWindowTitle(windowSystem->getGLFWWindow(), title.c_str());
@@ -49,9 +55,12 @@ void Engine::run() {
             lastTime = currentTime;
         }
 
+
+
         inputSystem->setDeltaTime(deltaTime);
         inputSystem->processInput();
         
+
 
         scene->update(deltaTime);
         
@@ -62,6 +71,7 @@ void Engine::run() {
             0.1f,
             1000000.0f
         );
+        
         glm::mat4 view = camera->GetViewMatrix();
         
         renderSystem->render(currentTime, view, projection);

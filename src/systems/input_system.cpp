@@ -1,4 +1,6 @@
 #include "input_system.h"
+#include "render_system.h"
+#include <iostream>
 
 InputSystem* InputSystem::instance = nullptr;
 
@@ -38,7 +40,7 @@ void InputSystem::framebufferSizeCallback(GLFWwindow* window, int width, int hei
 
 
 InputSystem::InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight)
-    : window(w), camera(cam), deltaTime(0.0f), firstMouse(true) {
+    : window(w), camera(cam), renderSystem(nullptr), deltaTime(0.0f), firstMouse(true) {
     lastX = screenWidth / 2.0f;
     lastY = screenHeight / 2.0f;
     
@@ -67,4 +69,5 @@ void InputSystem::processInput() {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 }

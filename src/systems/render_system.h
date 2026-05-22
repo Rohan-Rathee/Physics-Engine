@@ -7,13 +7,15 @@
 #include "../utils/model_loader.h"
 #include <string>
 #include <memory>
+#include "../core/time_manager.h"
+
 
 class RenderSystem {
 private:
     std::unique_ptr<Shader> shader;
     std::unique_ptr<Shader> modelShader;
     std::unique_ptr<Shader> lightingShader;
-    std::vector<std::pair<std::unique_ptr<Model>, glm::mat4>> models;
+    std::unique_ptr<ModelLoader> modelLoader;
     unsigned int instanceVBO;
     unsigned int VAO, VBO, lightVAO;
     unsigned int texture1, texture2;
@@ -22,6 +24,21 @@ private:
     std::string modelVertexPath, modelFragmentPath;
     std::vector<glm::mat4> instanceMatrices;
     glm::vec4 frustumPlanes[6];
+    unsigned int shadowFBO, shadowDepthMap;
+    unsigned int SHADOW_WIDTH = 10240, SHADOW_HEIGHT = 10240;
+
+    std::unique_ptr<Shader> shadowShader;
+    glm::mat4 lightProjection, lightView;
+    glm::vec3 lightPos;
+    std::vector<glm::vec3> cubePositions;
+    glm::vec3 lightDir;
+
+
+    void setupModels();
+    void setupCube();
+    void setupShadowFramebuffer();
+    void ShadowPass(float currentFrame, const glm::mat4 lightSpaceMatrix);
+    void RenderPass(const glm::mat4& view, const glm::mat4& projection, glm::mat4 lightSpaceMatrix, float currentFrame);
 
 public:
     RenderSystem(const std::string& vertexPath, const std::string& fragmentPath, 
@@ -36,10 +53,14 @@ public:
     
 
     void loadModel(const std::string& modelPath, const glm::vec3& position = glm::vec3(0.0f), 
-                   const glm::vec3& scale = glm::vec3(1.0f));
-    void clearModels();
+                   const glm::vec3& scale = glm::vec3(1.0f)) {
+        modelLoader->loadModel(modelPath, position, scale);
+    }
+    void clearModels() { modelLoader->clearModels(); }
     void setModelTransform(size_t modelIndex, const glm::vec3& position, const glm::vec3& scale, 
-                          float rotationAngle = 0.0f, const glm::vec3& rotationAxis = glm::vec3(0.0f, 1.0f, 0.0f));
+                          float rotationAngle = 0.0f, const glm::vec3& rotationAxis = glm::vec3(0.0f, 1.0f, 0.0f)) {
+        modelLoader->setModelTransform(modelIndex, position, scale, rotationAngle, rotationAxis);
+    }
 };
 
 

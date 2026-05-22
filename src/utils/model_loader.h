@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <string>
+#include <memory>
 
 
 class Shader;
@@ -52,4 +53,21 @@ private:
     std::vector<texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, const std::string& typeName);
 };
 
+class ModelLoader {
+public:
+    void loadModel(const std::string& modelPath, const glm::vec3& position = glm::vec3(0.0f), 
+                   const glm::vec3& scale = glm::vec3(1.0f));
+    void clearModels();
+    void setModelTransform(size_t modelIndex, const glm::vec3& position, const glm::vec3& scale, 
+                           float rotationAngle = 0.0f, const glm::vec3& rotationAxis = glm::vec3(0.0f, 1.0f, 0.0f));
+
+private:
+    struct ModelData {
+        std::unique_ptr<Model> model;
+        glm::mat4 transform;
+    };
+    std::vector<ModelData> models;
+    
+    friend class RenderSystem;
+}; 
 #endif

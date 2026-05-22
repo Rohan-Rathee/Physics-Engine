@@ -5,13 +5,17 @@
 #include <GLFW/glfw3.h>
 #include "../camera.h"
 
+class RenderSystem;
+
 class InputSystem {
 private:
     Camera& camera;
+    RenderSystem* renderSystem;
     GLFWwindow* window;
     float deltaTime;
     float lastX, lastY;
     bool firstMouse;
+    bool mKeyPressed = false;
     
     static InputSystem* instance;
     
@@ -22,6 +26,7 @@ private:
 public:
     InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight);
     
+    void setRenderSystem(RenderSystem* rs) { renderSystem = rs; }
     void processInput();
     void setDeltaTime(float dt) { deltaTime = dt; }
 };
