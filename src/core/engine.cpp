@@ -65,16 +65,24 @@ void Engine::run() {
         scene->update(deltaTime);
         
         // Render
+        // Update screen size from actual window size
+        int windowWidth, windowHeight;
+        glfwGetWindowSize(windowSystem->getGLFWWindow(), &windowWidth, &windowHeight);
+        screenWidth = static_cast<unsigned int>(windowWidth);
+        screenHeight = static_cast<unsigned int>(windowHeight);
         glm::mat4 projection = glm::perspective(
             glm::radians(camera->Zoom),
             (float)screenWidth / (float)screenHeight,
             0.1f,
             1000000.0f
         );
+
+        // Update screen size in render system in case of resizing
+        renderSystem->setScreenSize(screenWidth, screenHeight);
         
         glm::mat4 view = camera->GetViewMatrix();
         
-        renderSystem->render(currentTime, view, projection);
+        renderSystem->render(*camera, currentTime, view, projection);
         
         // Swap buffers and poll events
         windowSystem->swapBuffers();

@@ -3,7 +3,7 @@
 
 int main() {
     try {
-        Engine engine(1280, 720, "Physics Engine");
+        Engine engine(1920, 1080, "Physics Engine");
         
         if (!engine.initialize()) {
             std::cerr << "Failed to initialize engine" << std::endl;

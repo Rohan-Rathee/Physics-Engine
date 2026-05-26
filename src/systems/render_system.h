@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include "../shader.h"
 #include "../utils/model_loader.h"
+#include "../camera.h"
 #include <string>
 #include <memory>
 #include "../core/time_manager.h"
@@ -12,7 +13,6 @@
 
 class RenderSystem {
 private:
-    std::unique_ptr<Shader> shader;
     std::unique_ptr<Shader> modelShader;
     std::unique_ptr<Shader> lightingShader;
     std::unique_ptr<ModelLoader> modelLoader;  // Use ModelLoader for model management
@@ -25,7 +25,8 @@ private:
     std::vector<glm::mat4> instanceMatrices;
     glm::vec4 frustumPlanes[6];
     unsigned int shadowFBO, shadowDepthMap;
-    unsigned int SHADOW_WIDTH = 10240, SHADOW_HEIGHT = 10240;
+    static constexpr unsigned int SHADOW_WIDTH = 10240;
+    static constexpr unsigned int SHADOW_HEIGHT = 10240;
 
     std::unique_ptr<Shader> shadowShader;
     glm::mat4 lightProjection, lightView;
@@ -38,7 +39,8 @@ private:
     void setupCube();
     void setupShadowFramebuffer();
     void ShadowPass(float currentFrame, const glm::mat4 lightSpaceMatrix);
-    void RenderPass(const glm::mat4& view, const glm::mat4& projection, glm::mat4 lightSpaceMatrix, float currentFrame);
+    void RenderPass(const Camera& camera, const glm::mat4& view, const glm::mat4& projection, glm::mat4 lightSpaceMatrix, float currentFrame);
+
 
 public:
     RenderSystem(const std::string& vertexPath, const std::string& fragmentPath, 
@@ -46,7 +48,7 @@ public:
     ~RenderSystem();
 
     bool initialize();
-    void render(float currentFrame, const glm::mat4& view, const glm::mat4& projection);
+    void render(const Camera& camera, float currentFrame, const glm::mat4& view, const glm::mat4& projection);
     void setScreenSize(unsigned int w, unsigned int h) { screenWidth = w; screenHeight = h; }
     void extractFrustumPlanes(const glm::mat4& vp);
     bool isInFrustum(const glm::vec3& pos);
@@ -57,10 +59,18 @@ public:
         modelLoader->loadModel(modelPath, position, scale);
     }
     void clearModels() { modelLoader->clearModels(); }
-    void setModelTransform(size_t modelIndex, const glm::vec3& position, const glm::vec3& scale, 
-                          float rotationAngle = 0.0f, const glm::vec3& rotationAxis = glm::vec3(0.0f, 1.0f, 0.0f)) {
+    void setModelTransform(size_t modelIndex, const glm::vec3& position, const glm::vec3& scale,
+                           float rotationAngle = 0.0f, const glm::vec3& rotationAxis = glm::vec3(0.0f, 1.0f, 0.0f)) {
         modelLoader->setModelTransform(modelIndex, position, scale, rotationAngle, rotationAxis);
     }
+
+    std::unique_ptr<Shader> debugShader;
+
+    unsigned int quadVAO = 0;
+    unsigned int quadVBO = 0;
+
+    void setupDebugQuad();
+    void renderShadowMapDebug();
 };
 
 

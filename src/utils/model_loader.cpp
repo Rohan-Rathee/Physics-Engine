@@ -20,12 +20,11 @@ unsigned int CreateWhiteTexture()
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);//
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
     return textureID;
 }
-
 // Helper function to load texture from embedded data (for GLB/GLTF)
 unsigned int TextureFromEmbeddedData(const aiTexel *data, unsigned int width, unsigned int height)
 {
@@ -38,12 +37,12 @@ unsigned int TextureFromEmbeddedData(const aiTexel *data, unsigned int width, un
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     return textureID;
 }
-
 // Helper function to load texture from file
 unsigned int TextureFromFile(const char *path, const string &directory, const aiScene* scene = nullptr)
 {
@@ -88,7 +87,8 @@ unsigned int TextureFromFile(const char *path, const string &directory, const ai
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
                 stbi_image_free(data);
@@ -143,7 +143,8 @@ unsigned int TextureFromFile(const char *path, const string &directory, const ai
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         stbi_image_free(data);
@@ -230,8 +231,16 @@ Model::Model(const std::string &path)
 
 void Model::draw(Shader &shader)
 {
+    draw(shader, glm::mat4(1.0f));
+}
+
+void Model::draw(Shader &shader, const glm::mat4& parentTransform)
+{
     for(unsigned int i = 0; i < meshes.size(); i++)
-        meshes[i].draw(shader);
+    {
+        shader.setMat4("model", parentTransform * meshes[i].transform);
+        meshes[i].mesh.draw(shader);
+    }
 }
 
 void Model::loadModel(const std::string &path)
@@ -248,20 +257,44 @@ void Model::loadModel(const std::string &path)
     scene_ptr = scene;
     directory = path.substr(0, path.find_last_of('/'));
 
-    processNode(scene->mRootNode, scene);
+    processNode(scene->mRootNode, scene, glm::mat4(1.0f));
 }
 
-void Model::processNode(aiNode *node, const aiScene *scene)
+glm::mat4 aiMatrix4x4ToGlm(const aiMatrix4x4& from)
 {
+    glm::mat4 to;
+
+    to[0][0] = from.a1; to[1][0] = from.a2;
+    to[2][0] = from.a3; to[3][0] = from.a4;
+
+    to[0][1] = from.b1; to[1][1] = from.b2;
+    to[2][1] = from.b3; to[3][1] = from.b4;
+
+    to[0][2] = from.c1; to[1][2] = from.c2;
+    to[2][2] = from.c3; to[3][2] = from.c4;
+
+    to[0][3] = from.d1; to[1][3] = from.d2;
+    to[2][3] = from.d3; to[3][3] = from.d4;
+
+    return to;
+}
+
+void Model::processNode(aiNode *node, const aiScene *scene, glm::mat4 parentTransform)
+{
+    glm::mat4 transform = parentTransform * aiMatrix4x4ToGlm(node->mTransformation);
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
     {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]]; 
-        meshes.push_back(processMesh(mesh, scene));			
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        MeshInstance instance;
+        instance.mesh = processMesh(mesh, scene);
+        instance.transform = transform;
+        meshes.push_back(instance);
     }
     for(unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        processNode(node->mChildren[i], scene);
+        processNode(node->mChildren[i], scene, transform);
     }
+
 }
 
 Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
@@ -390,4 +423,23 @@ void ModelLoader::setModelTransform(size_t modelIndex, const glm::vec3& position
     modelMatrix = glm::scale(modelMatrix, scale);
     
     models[modelIndex].transform = modelMatrix;
+}
+
+void ModelLoader::updateModelTransform(size_t modelIndex, const glm::vec3& deltaPosition, const glm::vec3& deltaScale, float deltaRotationAngle, const glm::vec3& rotationAxis) {
+    if (modelIndex >= models.size()) {
+        std::cerr << "Invalid model index: " << modelIndex << std::endl;
+        return;
+    }
+
+    // Apply incremental transformations
+    glm::mat4& modelMatrix = models[modelIndex].transform;
+    
+    // Apply translation
+    modelMatrix = glm::translate(modelMatrix, deltaPosition);
+    
+    // Apply rotation
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(deltaRotationAngle), rotationAxis);
+    
+    // Apply scaling
+    modelMatrix = glm::scale(modelMatrix, deltaScale);
 }

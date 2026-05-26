@@ -9,11 +9,12 @@ class RenderSystem;  // Forward declaration
 
 class InputSystem {
 private:
+
     Camera& camera;
     RenderSystem* renderSystem;
     GLFWwindow* window;
     float deltaTime;
-    float lastX, lastY;
+
     bool firstMouse;
     bool mKeyPressed = false;
     
@@ -24,6 +25,7 @@ private:
     static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 public:
+    float lastX, lastY;
     InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight);
     
     void setRenderSystem(RenderSystem* rs) { renderSystem = rs; }
