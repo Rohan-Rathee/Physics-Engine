@@ -35,8 +35,10 @@ void InputSystem::scrollCallback(GLFWwindow* window, double xoffset, double yoff
 
 void InputSystem::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+    if (InputSystem::instance && InputSystem::instance->renderSystem) {
+        InputSystem::instance->renderSystem->setScreenSize(width, height);
+    }
 }
-
 
 
 InputSystem::InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight)
@@ -50,7 +52,6 @@ InputSystem::InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, u
     glfwSetScrollCallback(window, scrollCallback);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 }
-
 
 
 void InputSystem::processInput() {
@@ -69,5 +70,6 @@ void InputSystem::processInput() {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 
 }

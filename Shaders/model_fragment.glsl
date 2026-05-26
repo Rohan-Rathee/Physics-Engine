@@ -18,14 +18,31 @@ float calculateShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
     
     if(projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || 
        projCoords.y < 0.0 || projCoords.y > 1.0)
-        return 0.0;
+    return 0.0;
     
     float closestDepth = texture(shadowMap, projCoords.xy).r; 
     float currentDepth = projCoords.z;
-    float bias = 0.001;
+    float bias = 0.0008;
+
+
+
+
+
 
     
-    return (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
+
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+
+    float shadow = 0.0;
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
+        }    
+    }
+    return shadow / 9.0;
 }
 
 
@@ -33,15 +50,27 @@ void main()
 {
     vec3 normal = normalize(Normal);
     vec4 diffuseColor = texture(texture_diffuse1, TexCoord);
+    vec3 lightDirection = normalize(-lightDir);
+
     
     if (diffuseColor.a < 0.1) {
         discard;
     }
-    
-    float shadow = calculateShadow(FragPosLightSpace, normal, lightDir);
-    float lighting = (1.0 - shadow);
-    vec3 result = diffuseColor.rgb * max(lighting, 0.3);
+
+    float shadow = calculateShadow(FragPosLightSpace, Normal, lightDir);
+    float ambient = 0.001;
+
+    float diffuse = max(dot(normal, lightDirection), 0.0);
+    diffuse = pow(diffuse, 0.85);
+
+    float lighting = pow(ambient + diffuse * (1.0 - shadow), 0.3);
+
+
+    vec3 result = diffuseColor.rgb * lighting;
     
     FragColor = vec4(result, diffuseColor.a);
+
+
+    
 
 }
