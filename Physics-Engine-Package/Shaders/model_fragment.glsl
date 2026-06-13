@@ -18,11 +18,11 @@ float calculateShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
     
     if(projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || 
        projCoords.y < 0.0 || projCoords.y > 1.0)
-        return 0.0;
+    return 0.0;
     
     float closestDepth = texture(shadowMap, projCoords.xy).r; 
     float currentDepth = projCoords.z;
-    float bias = 0.004;
+    float bias = 0.0008;
 
 
 
@@ -69,15 +69,8 @@ void main()
     vec3 result = diffuseColor.rgb * lighting;
     
     FragColor = vec4(result, diffuseColor.a);
+
+
     
-
-
-
-
-
-
-
-
-
 
 }

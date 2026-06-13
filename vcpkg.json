@@ -13,6 +13,14 @@
     "openal-soft",
     "zstd",
     "assimp",
-    "curl"
+    "curl",
+    "bullet3",
+    {
+      "name": "imgui",
+      "features": [
+        "glfw-binding",
+        "opengl3-binding"
+      ]
+    }
   ]
 }

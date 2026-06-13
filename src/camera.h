@@ -99,6 +99,15 @@ public:
 
         updateCameraVectors();
     }
+    void LookAt(const glm::vec3& target)
+    {
+        Front = glm::normalize(target - Position);
+
+        glm::vec3 worldUp(0.0f, 0.0f, 1.0f);
+
+        Right = glm::normalize(glm::cross(Front, worldUp));
+        Up = glm::normalize(glm::cross(Right, Front));
+    }
 
 
     void ProcessMouseScroll(float yoffset)

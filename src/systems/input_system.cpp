@@ -71,5 +71,12 @@ void InputSystem::processInput() {
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+    if (renderSystem)
+    {
+        renderSystem->setBulletDebugDrawEnabled(
+            glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS
+        );
+    }
+
 
 }
