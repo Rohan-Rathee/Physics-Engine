@@ -5,10 +5,15 @@
 #include <glm/glm.hpp>
 #include "../shader.h"
 #include "../utils/model_loader.h"
+#include "../utils/model_transform.h"
+#include "../utils/bullet_debug_drawer.h"
 #include "../camera.h"
 #include <string>
 #include <memory>
 #include "../core/time_manager.h"
+
+class btDynamicsWorld;
+
 //>" for includes: "" is for user-defined headers, <> is for system headers. Since shader.h and model_loader.h are part of our project, we use "" to include them. // Example light position in world space
 
 class RenderSystem {
@@ -16,6 +21,7 @@ private:
     std::unique_ptr<Shader> modelShader;
     std::unique_ptr<Shader> lightingShader;
     std::unique_ptr<ModelLoader> modelLoader;  // Use ModelLoader for model management
+    ModelTransform* modelTransform;  // Raw pointer, managed by Engine
     unsigned int instanceVBO;
     unsigned int VAO, VBO, lightVAO;
     unsigned int texture1, texture2;
@@ -48,6 +54,7 @@ public:
     ~RenderSystem();
 
     bool initialize();
+    bool initializeModels();  // Call this separately after engine sets modelTransformPtr
     void render(const Camera& camera, float currentFrame, const glm::mat4& view, const glm::mat4& projection);
     void setScreenSize(unsigned int w, unsigned int h) { screenWidth = w; screenHeight = h; }
     void extractFrustumPlanes(const glm::mat4& vp);
@@ -61,13 +68,27 @@ public:
     void clearModels() { modelLoader->clearModels(); }
     void setModelTransform(size_t modelIndex, const glm::vec3& position, const glm::vec3& scale,
                            float rotationAngle = 0.0f, const glm::vec3& rotationAxis = glm::vec3(0.0f, 1.0f, 0.0f)) {
-        modelLoader->setModelTransform(modelIndex, position, scale, rotationAngle, rotationAxis);
+        if (modelTransform) {
+            modelTransform->setTransform(modelIndex, position, scale, rotationAngle, rotationAxis);
+        }
     }
+    
+    // Getter methods
+    ModelLoader* getModelLoader() { return modelLoader.get(); }
+    void setModelTransformPtr(ModelTransform* mt) { modelTransform = mt; }
+    void setPhysicsWorldPtr(btDynamicsWorld* world) { physicsWorld = world; }
+    void setBulletDebugDrawEnabled(bool enabled) { bulletDebugDrawEnabled = enabled; }
 
     std::unique_ptr<Shader> debugShader;
 
     unsigned int quadVAO = 0;
     unsigned int quadVBO = 0;
+
+    // Physics debug rendering
+    std::unique_ptr<BulletDebugDrawer> bulletDebugDrawer;
+    btDynamicsWorld* physicsWorld = nullptr;
+    std::unique_ptr<Shader> debugLineShader;
+    bool bulletDebugDrawEnabled = false;
 
     void setupDebugQuad();
     void renderShadowMapDebug();

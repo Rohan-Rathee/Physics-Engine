@@ -18,11 +18,11 @@ float calculateShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
     
     if(projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || 
        projCoords.y < 0.0 || projCoords.y > 1.0)
-        return 0.0;
+    return 0.0;
     
     float closestDepth = texture(shadowMap, projCoords.xy).r; 
     float currentDepth = projCoords.z;
-    float bias = 0.004;
+    float bias = 0.0008;
     //variables:
     //1) bias: base bias
     //2) bias scaling factor: 10.0 is an arbitrary value that determines how much the bias increases with angle. You can adjust this based on your scene's needs.
@@ -69,15 +69,8 @@ void main()
     vec3 result = diffuseColor.rgb * lighting;
     
     FragColor = vec4(result, diffuseColor.a);
+    //output depth map for debugging from shadowMap
+    //FragColor = vec4(vec3(texture(shadowMap, TexCoord).r), 1.0);
     
-    //FragColor = vec4(vec3(shadow), 1.0);
-    //normal visualization
-    //FragColor = vec4(normal * 0.5 + 0.5, 1.0);
-    //normals facing camera visualization
-
-    //SHADOW MAP SHOWING
-    //shadow map real visualization
-    //FragColor = vec4(vec3(shadow), 1.0);
-    //only shadowed areas
 
 }

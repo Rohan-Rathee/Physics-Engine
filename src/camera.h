@@ -99,6 +99,15 @@ public:
         // update Front, Right and Up Vectors using the updated Euler angles
         updateCameraVectors();
     }
+    void LookAt(const glm::vec3& target)
+    {
+        Front = glm::normalize(target - Position);
+
+        glm::vec3 worldUp(0.0f, 0.0f, 1.0f);
+
+        Right = glm::normalize(glm::cross(Front, worldUp));
+        Up = glm::normalize(glm::cross(Right, Front));
+    }
 
     // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     void ProcessMouseScroll(float yoffset)

@@ -16,6 +16,8 @@ find_package(glad CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(CURL CONFIG REQUIRED)
+find_package(Bullet CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 # Add executables
 add_executable(main 
@@ -25,10 +27,14 @@ add_executable(main
     src/systems/input_system.cpp
     src/systems/render_system.cpp
     src/systems/window_system.cpp
+    src/systems/physics_system.cpp
     src/scene/entity.cpp
     src/scene/scene.cpp
     src/components/transform.cpp
     src/utils/model_loader.cpp
+    src/utils/model_transform.cpp
+    src/utils/bullet_debug_drawer.cpp
+    src/systems/imgui_system.cpp
 )
 
 # Link libraries
@@ -38,9 +44,12 @@ target_link_libraries(main PRIVATE
     glm::glm
     assimp::assimp
     CURL::libcurl
+    ${BULLET_LIBRARIES}
+    imgui::imgui
 )
 
 # Add include directories for header-only libraries
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include")
     target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include")
+    target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include/bullet")
 endif()

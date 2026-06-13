@@ -23,18 +23,16 @@ public:
     std::filesystem::file_time_type fragmentModTimeRaw;
 
     Shader(const char* vPath, const char* fPath){
-        vertexPath = vPath;
+        vertexPath = vPath;// Store the shader file paths
         fragmentPath = fPath;
         updateModificationTimes();
         compileShaders();
     };
-
     void compileShaders(){
         std::string vertexCode;
         std::string fragmentCode;
         std::ifstream vShaderFile;
         std::ifstream fShaderFile;
-        
         vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
         fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
 
@@ -60,7 +58,7 @@ public:
         const char* vShaderCode = vertexCode.c_str();
         const char* fShaderCode = fragmentCode.c_str();
         unsigned int vertex, fragment;
-
+        
         vertex = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertex, 1, &vShaderCode, NULL);
         glCompileShader(vertex);
