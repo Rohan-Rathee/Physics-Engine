@@ -35,6 +35,10 @@ add_executable(main
     src/utils/model_transform.cpp
     src/utils/bullet_debug_drawer.cpp
     src/systems/imgui_system.cpp
+    src/animation/animator.cpp
+    src/animation/animation.cpp
+    src/animation/assimp_glm_helpers.h
+    src/animation/bone.cpp
 )
 
 # Link libraries

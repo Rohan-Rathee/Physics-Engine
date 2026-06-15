@@ -9,6 +9,7 @@ class GLFWwindow;
 
 class ImGuiSystem {
 public:
+    
     ImGuiSystem() = default;
     ~ImGuiSystem() = default;
 

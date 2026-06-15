@@ -344,27 +344,41 @@ void RenderSystem::setupModels()
     {
         Model *groundModel = modelLoader->models[0].model.get();
 
-        btCollisionShape* shape = modelLoader->models[0].model->buildCompoundBoxCollider();
+        btCollisionShape *shape = modelLoader->models[0].model->buildCompoundBoxCollider();
 
         modelTransform->initializePhysicsBody(0, 0.0f, shape, 0.2f);
     }
 
 
     btCollisionShape *basketballShape = nullptr;
-    
-    for (int i = 0; i < 1; ++i){
-        for (int j = 0; j < 1; ++j){
+
+    for (int i = 0; i < 1; ++i)
+    {
+        for (int j = 0; j < 1; ++j)
+        {
             loadModel("models\\untitled1.glb", glm::vec3(0.0f), glm::vec3(1.0f));
             int currentIndex = modelLoader->models.size() - 1;
-            
+
+
+
+            modelLoader->setModelAnimation(currentIndex, 0);
+
             if (basketballShape == nullptr && modelTransform)
             {
                 Model *basketballModel = modelLoader->models[currentIndex].model.get();
                 basketballShape = basketballModel->buildCapsuleColliderFromMesh();
+                glm::vec3 scale =
+                    modelLoader->getModelScale(currentIndex);
+
+                basketballShape->setLocalScaling(
+                    btVector3(
+                        scale.x,
+                        scale.y,
+                        scale.z));
             }
-            
+
             glm::vec3 position = glm::vec3(0.0f, 10.0f, 0.0f);
-            setModelTransform(currentIndex, position, glm::vec3(2.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+            setModelTransform(currentIndex, position, glm::vec3(1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
             if (modelTransform && basketballShape)
             {
                 modelTransform->initializePhysicsBody(currentIndex, 80.0f, basketballShape, 0.1f);
@@ -373,9 +387,7 @@ void RenderSystem::setupModels()
         }
     }
 
-
 }
-
 
 void RenderSystem::setupCube()
 {
@@ -396,7 +408,7 @@ void RenderSystem::setupCube()
     {
         GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-         glGenerateMipmap(GL_TEXTURE_2D);
+        glGenerateMipmap(GL_TEXTURE_2D);
     }
     else
     {
@@ -469,9 +481,9 @@ bool RenderSystem::initialize()
     setupCube();
     setupShadowFramebuffer();
     setupDebugQuad();
-    
+
     bulletDebugDrawer->initBuffers();
-    
+
     debugLineShader = std::make_unique<Shader>("Shaders/debug_line_vertex.glsl", "Shaders/debug_line_fragment.glsl");
 
     return true;
@@ -593,10 +605,13 @@ void RenderSystem::RenderPass(const Camera &camera, const glm::mat4 &view, const
 
         if (!modelLoader->models.empty())
         {
-            for (auto &modelData : modelLoader->models)
+            for (size_t i = 0; i < modelLoader->models.size(); i++)
             {
+                auto &modelData = modelLoader->models[i];
 
-                modelData.model->draw(*modelShader, modelData.transform, true);
+
+
+                modelData.model->draw(*modelShader, modelData.transform, modelLoader->getBoneMatrices(i), true);
             }
         }
 
@@ -608,18 +623,16 @@ void RenderSystem::RenderPass(const Camera &camera, const glm::mat4 &view, const
         glDisable(GL_CULL_FACE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glLineWidth(2.0f);
-        
+
         bulletDebugDrawer->setShaderAndMatrices(debugLineShader.get(), view, projection);
         physicsWorld->setDebugDrawer(bulletDebugDrawer.get());
         physicsWorld->debugDrawWorld();
-        
+
         glLineWidth(1.0f);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glEnable(GL_CULL_FACE);
-        
     }
-    
 }
 
 void RenderSystem::render(const Camera &camera, float currentFrame, const glm::mat4 &view, const glm::mat4 &projection)
@@ -627,6 +640,7 @@ void RenderSystem::render(const Camera &camera, float currentFrame, const glm::m
 
 
 
+    
     if (modelShader)
         modelShader->hotReload();
     if (shadowShader)

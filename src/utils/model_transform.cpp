@@ -121,7 +121,7 @@ void ModelTransform::applyPhysicsTransform(const PhysicsModelData &physicsModel)
         axis = glm::normalize(axis);
     }
 
-    glm::vec3 scale = glm::vec3(1.0f);
+    glm::vec3 scale =  modelLoader->getModelScale(physicsModel.modelIndex);
     setTransform(
         physicsModel.modelIndex,
         position,
@@ -187,10 +187,19 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
                 keypress = 1;
             }
             btVector3 startPos = modelBody->getWorldTransform().getOrigin();
-            btVector3 endPos = startPos - btVector3(0, 1.2f, 0);
+            btVector3 endPos = startPos - btVector3(0, 1.0f, 0);
 
             btCollisionWorld::ClosestRayResultCallback rayCallback(startPos, endPos);
             physicsSystem->getDynamicsWorld()->rayTest(startPos, endPos, rayCallback);
+
+
+
+            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE) == GLFW_PRESS and !isModelInAir)
+            {
+                applyImpulse(physicsModels[1].modelIndex, cameraUp * 500.0f);
+                isModelInAir = true;
+                keypress = 1;
+            }
 
             if (rayCallback.hasHit())
             {
@@ -200,11 +209,10 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
             {
                 isModelInAir = true;
             }
-            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE) == GLFW_PRESS and !isModelInAir)
+
+            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE) == GLFW_PRESS)
             {
-                applyImpulse(physicsModels[1].modelIndex, cameraUp * 200.0f);
                 isModelInAir = true;
-                keypress = 1;
             }
 
 
@@ -308,6 +316,35 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
                 }
             }
         }
+        
+
+        static int lastanimationState = 1;
+        if (physicsModels.size() > 1)
+        {
+            btRigidBody *modelBody = physicsModels[1].rigidBody;
+            if (modelBody)
+            {
+                btVector3 velocity = modelBody->getLinearVelocity();
+                float speed = velocity.length();
+
+
+                const float movingThreshold = 0.1f;
+
+                if (speed > movingThreshold && lastanimationState == 1)
+                {
+
+                    modelLoader->setModelAnimation(1,0);
+                    lastanimationState = 0;
+                }
+                if (speed <= movingThreshold && lastanimationState == 0)
+                {
+
+                    modelLoader->setModelAnimation(1,1);
+                    lastanimationState = 1;
+                }
+            }
+        }
+    
     }
 }
 

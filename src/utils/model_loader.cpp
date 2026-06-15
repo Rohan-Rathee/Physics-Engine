@@ -222,7 +222,28 @@ void Mesh::setupMesh()
     glEnableVertexAttribArray(2);	
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, texCoords));
 
+
+    glEnableVertexAttribArray(3);
+    glVertexAttribIPointer(3, 4, GL_INT, sizeof(vertex), (void*)offsetof(vertex, boneIDs));
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, weights));
     glBindVertexArray(0);
+
+}
+
+void SetVertexBoneData(vertex& vert, int boneID, float weight)
+{
+    for (int i = 0; i < MAX_BONE_INFLUENCE; i++)
+    {
+        if (vert.boneIDs[i] == -1)
+        {
+            vert.boneIDs[i] = boneID;
+            vert.weights[i] = weight;
+            return;
+        }
+    }
+
+    std::cerr << "Warning: More than " << MAX_BONE_INFLUENCE << " bones influencing a vertex. Extra influences will be ignored." << std::endl;
 }
 
 Model::Model(const std::string &path)
@@ -253,7 +274,39 @@ void Model::draw(Shader &shader, const glm::mat4& parentTransform, bool renderCo
     }
 }
 
+void Model::draw(Shader &shader, const glm::mat4& parentTransform, bool renderColliders, bool skipMeshTransform)
+{
+    for (auto& meshInstance : meshes)
+    {
+        if (IsColliderMesh(meshInstance.name))
+            continue;
 
+        glm::mat4 modelMatrix = skipMeshTransform
+            ? parentTransform
+            : parentTransform * meshInstance.transform;
+
+        shader.setMat4("model", modelMatrix);
+        meshInstance.mesh.draw(shader);
+    }
+}
+void Model::draw(Shader& shader, const glm::mat4& parentTransform, const std::vector<glm::mat4>& boneMatrices, bool renderColliders)
+
+{
+    bool isAnimated = !boneMatrices.empty();
+
+    if (isAnimated)
+    {
+        shader.setBool("hasAnimation", true);
+        for (size_t i = 0; i < boneMatrices.size(); i++)
+            shader.setMat4("finalBonesMatrices[" + std::to_string(i) + "]", boneMatrices[i]);
+    }
+    else
+    {
+        shader.setBool("hasAnimation", false);
+    }
+
+    draw(shader, parentTransform, renderColliders, isAnimated);
+}
 
 btCollisionShape* Model::buildConvexHullCollider()
 {
@@ -530,16 +583,24 @@ glm::vec3 ModelLoader::getModelScale(size_t modelIndex) const
 
 void Model::loadModel(const std::string &path)
 {
-    Assimp::Importer importer;
+    importer = std::make_unique<Assimp::Importer>();
     unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | 
                          aiProcess_JoinIdenticalVertices | aiProcess_SortByPType;
-    const aiScene* scene = importer.ReadFile(path, flags);
+    const aiScene* scene = importer->ReadFile(path, flags);
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
-        std::cerr << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
+        std::cerr << "ERROR::ASSIMP::" << importer->GetErrorString() << std::endl;
         return;
     }
     scene_ptr = scene;
+    
+    if (scene->HasAnimations()){
+        std::cout << "Animations: "
+                << scene->mNumAnimations
+                << std::endl;
+    }
+
+
     directory = path.substr(0, path.find_last_of('/'));
 
     processNode(scene->mRootNode, scene, glm::mat4(1.0f));
@@ -549,21 +610,28 @@ glm::mat4 aiMatrix4x4ToGlm(const aiMatrix4x4& from)
 {
     glm::mat4 to;
 
-    to[0][0] = from.a1; to[1][0] = from.a2;
-    to[2][0] = from.a3; to[3][0] = from.a4;
+    to[0][0] = from.a1;
+    to[0][1] = from.b1;
+    to[0][2] = from.c1;
+    to[0][3] = from.d1;
 
-    to[0][1] = from.b1; to[1][1] = from.b2;
-    to[2][1] = from.b3; to[3][1] = from.b4;
+    to[1][0] = from.a2;
+    to[1][1] = from.b2;
+    to[1][2] = from.c2;
+    to[1][3] = from.d2;
 
-    to[0][2] = from.c1; to[1][2] = from.c2;
-    to[2][2] = from.c3; to[3][2] = from.c4;
+    to[2][0] = from.a3;
+    to[2][1] = from.b3;
+    to[2][2] = from.c3;
+    to[2][3] = from.d3;
 
-    to[0][3] = from.d1; to[1][3] = from.d2;
-    to[2][3] = from.d3; to[3][3] = from.d4;
+    to[3][0] = from.a4;
+    to[3][1] = from.b4;
+    to[3][2] = from.c4;
+    to[3][3] = from.d4;
 
     return to;
 }
-
 void Model::processNode(aiNode *node, const aiScene *scene, glm::mat4 parentTransform)
 {
     glm::mat4 transform = parentTransform * aiMatrix4x4ToGlm(node->mTransformation);
@@ -581,6 +649,35 @@ void Model::processNode(aiNode *node, const aiScene *scene, glm::mat4 parentTran
         processNode(node->mChildren[i], scene, transform);
     }
 
+}
+
+
+void Model::ExtractBoneWeights(std::vector<vertex>& vertices, aiMesh* mesh)
+{
+    for (unsigned int i = 0; i < mesh->mNumBones; i++)
+    {
+        aiBone* bone = mesh->mBones[i];
+        std::string boneName(bone->mName.C_Str());
+
+
+        if (boneInfoMap.find(boneName) == boneInfoMap.end())
+        {
+            BoneInfo boneInfo;
+            boneInfo.id = boneCounter++;
+            boneInfo.offset = aiMatrix4x4ToGlm(bone->mOffsetMatrix);
+            boneInfoMap[boneName] = boneInfo;
+        }
+
+        int boneID = boneInfoMap[boneName].id;
+
+        for (unsigned int j = 0; j < bone->mNumWeights; j++)
+        {
+            unsigned int vertexID = bone->mWeights[j].mVertexId;
+            float weight = bone->mWeights[j].mWeight;
+
+            SetVertexBoneData(vertices[vertexID], boneID, weight);
+        }
+    }
 }
 
 Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
@@ -643,7 +740,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         textures.push_back(defaultTexture);
     }
     
-
+    ExtractBoneWeights(vertices, mesh);
     return Mesh(vertices, indices, textures);
 }
 
@@ -677,11 +774,7 @@ std::vector<texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
     return textures;
 }
 
-void ModelLoader::loadModel(
-    const std::string& modelPath,
-    const glm::vec3& position,
-    const glm::vec3& scale)
-{
+void ModelLoader::loadModel(    const std::string& modelPath,    const glm::vec3& position,   const glm::vec3& scale){
     try
     {
         std::shared_ptr<Model> modelPtr;
@@ -768,4 +861,50 @@ glm::vec3 ModelLoader::getModelPosition(size_t modelIndex) const {
     
 
     return glm::vec3(models[modelIndex].transform[3]);
+}
+
+void ModelLoader::setModelAnimation(size_t modelIndex, unsigned int animationIndex)
+{
+    if (modelIndex >= models.size())
+    {
+        std::cerr << "ModelLoader::setModelAnimation: invalid model index " << modelIndex << std::endl;
+        return;
+    }
+
+
+    ModelData& data = models[modelIndex];
+    const aiScene* scene = data.model->getScene();
+
+    if (!scene || !scene->HasAnimations() || animationIndex >= scene->mNumAnimations)
+    {
+        std::cerr << "ModelLoader::setModelAnimation: model at index " << modelIndex
+                  << " has no animation at index " << animationIndex << std::endl;
+        return;
+    }
+
+    data.animation = std::make_unique<Animation>(scene, data.model.get(), animationIndex);
+    data.animator = std::make_unique<Animator>();
+    data.animator->PlayAnimation(data.animation.get());
+}
+
+void ModelLoader::updateAnimations(float deltaTime)
+{
+    for (auto& data : models)
+    {
+        if (data.animator)
+            data.animator->UpdateAnimation(deltaTime);
+    }
+}
+
+bool ModelLoader::hasAnimation(size_t modelIndex) const
+{
+    return modelIndex < models.size() && models[modelIndex].animator != nullptr;
+}
+
+const std::vector<glm::mat4>& ModelLoader::getBoneMatrices(size_t modelIndex) const
+{
+    static const std::vector<glm::mat4> empty;
+    if (modelIndex < models.size() && models[modelIndex].animator)
+        return models[modelIndex].animator->GetFinalBoneMatrices();
+    return empty;
 }

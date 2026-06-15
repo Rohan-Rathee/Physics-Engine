@@ -91,6 +91,7 @@ void Engine::run() {
         inputSystem->processInput();
         
         modelTransform->updateFrameTransforms(deltaTime);
+        renderSystem->getModelLoader()->updateAnimations(deltaTime);
 
         scene->update(deltaTime);
         
