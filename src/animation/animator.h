@@ -1,38 +1,106 @@
-#ifndef ANIMATOR_H
-#define ANIMATOR_H
+#pragma once
 
 #include <vector>
-#include <map>
-#include <memory>
 #include <string>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
 #include "animation.h"
 
-class Animator {
+
+
+
+struct BlendLayer
+{
+    Animation* animation = nullptr;
+    float      weight    = 1.0f;
+    float      time      = 0.0f;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Animator
+{
 public:
     Animator();
 
 
+
+
     void PlayAnimation(Animation* animation);
-
-
     void UpdateAnimation(float deltaTime);
+    const std::vector<glm::mat4>& GetFinalBoneMatrices() const { return finalBoneMatrices; }
 
-    const std::vector<glm::mat4>& GetFinalBoneMatrices() const
-    {
-        return finalBoneMatrices;
-    }
 
-    Animation* GetCurrentAnimation() const { return currentAnimation; }
+
+
+
+
+
+    void SetBlendLayers(std::vector<BlendLayer> layers);
+
+
+
+    void SetLayerWeight(size_t layerIndex, float weight);
+    size_t GetLayerCount() const { return blendLayers.size(); }
 
 private:
 
 
-    void CalculateBoneTransform(const AssimpNodeData* node, const glm::mat4& parentTransform);
 
-    std::vector<glm::mat4> finalBoneMatrices;
+
+
+    struct DecomposedTransform
+    {
+        glm::vec3 translation{ 0.f };
+        glm::quat rotation{ 1.f, 0.f, 0.f, 0.f };
+        glm::vec3 scale{ 1.f };
+    };
+
+    static DecomposedTransform DecomposeMatrix(const glm::mat4& m);
+    static glm::mat4            RecomposeMatrix(const DecomposedTransform& t);
+
+
+
+
+    void CollectBoneTransforms(
+        const AssimpNodeData*              node,
+        const glm::mat4&                   parentTransform,
+        Animation*                         anim,
+        float                              animTime,
+        std::vector<glm::mat4>&            outGlobal
+    );
+
+
+    void CalculateBlendedBoneTransforms();
+
+
+
+    void CalculateBoneTransform(const AssimpNodeData* node,
+                                const glm::mat4&      parentTransform,
+                                Animation*            anim,
+                                float                 animTime);
+
+
+
+
+    std::vector<BlendLayer>  blendLayers;
+    std::vector<glm::mat4>   finalBoneMatrices;
+
+
+
+
     Animation* currentAnimation = nullptr;
-    float currentTime = 0.0f;
+    float      currentTime      = 0.0f;
 };
-
-#endif

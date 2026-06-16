@@ -33,6 +33,7 @@ public:
     
 
     void updateFrameTransforms(float deltaTime);
+    bool blendAnimationsInitialized = false;
     
 
     btRigidBody* getPhysicsBody(size_t modelIndex);
@@ -44,8 +45,8 @@ public:
 
 private:
     size_t targetModelIndex = 1;
-    float followDistance = 8.0f;
-    float followHeight   = 0.0f;
+    float followDistance = 2.0f;
+    float followHeight   = -0.5f;
     float smoothness     = 1.0f;
     glm::vec3 cameraOffset = glm::vec3(0.0f);
     ModelLoader* modelLoader;

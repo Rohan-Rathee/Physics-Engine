@@ -121,7 +121,7 @@ void ModelTransform::applyPhysicsTransform(const PhysicsModelData &physicsModel)
         axis = glm::normalize(axis);
     }
 
-    glm::vec3 scale =  modelLoader->getModelScale(physicsModel.modelIndex);
+    glm::vec3 scale = modelLoader->getModelScale(physicsModel.modelIndex);
     setTransform(
         physicsModel.modelIndex,
         position,
@@ -164,34 +164,41 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
             glm::vec3 modelFront = glm::normalize(modelRotation * glm::vec3(-1.0f, 0.0f, 0.0f));
             glm::vec3 modelUp = glm::normalize(modelRotation * glm::vec3(0.0f, -1.0f, 0.0f));
             int keypress = 0;
+            bool forwardInput = 0;
+            bool lateralInput = 0;
+            
 
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_W) == GLFW_PRESS)
             {
-                applyForce(physicsModels[1].modelIndex, cameraForward * 800.0f);
+                applyForce(physicsModels[1].modelIndex, cameraForward * 400.0f);
                 keypress = 1;
+                forwardInput = true;
             }
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_S) == GLFW_PRESS)
             {
-                applyForce(physicsModels[1].modelIndex, -cameraForward * 400.0f);
+                applyForce(physicsModels[1].modelIndex, -cameraForward * 200.0f);
                 keypress = 1;
+                forwardInput = true;
             }
 
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_A) == GLFW_PRESS)
             {
-                applyForce(physicsModels[1].modelIndex, -cameraRight * 400.0f);
+                applyForce(physicsModels[1].modelIndex, -cameraRight * 200.0f);
                 keypress = 1;
+                lateralInput = true;
             }
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_D) == GLFW_PRESS)
             {
-                applyForce(physicsModels[1].modelIndex, cameraRight * 400.0f);
+                applyForce(physicsModels[1].modelIndex, cameraRight * 200.0f);
                 keypress = 1;
+                lateralInput = true;
             }
+
             btVector3 startPos = modelBody->getWorldTransform().getOrigin();
             btVector3 endPos = startPos - btVector3(0, 1.0f, 0);
 
             btCollisionWorld::ClosestRayResultCallback rayCallback(startPos, endPos);
             physicsSystem->getDynamicsWorld()->rayTest(startPos, endPos, rayCallback);
-
 
 
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE) == GLFW_PRESS and !isModelInAir)
@@ -315,93 +322,147 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
                     g_camera->Pitch = glm::degrees(asin(g_camera->Front.y));
                 }
             }
-        }
-        
 
-        static int lastanimationState = 1;
+            if (!isModelInAir)
+            {
+                btVector3 vel = modelBody->getLinearVelocity();
+
+                glm::vec3 velocity(
+                    vel.x(),
+                    vel.y(),
+                    vel.z());
+
+
+                glm::vec3 forward = modelFront;
+                forward.y = 0.0f;
+
+                if (glm::length(forward) > 0.001f)
+                    forward = glm::normalize(forward);
+
+                glm::vec3 right =
+                    glm::normalize(
+                        glm::cross(
+                            forward,
+                            glm::vec3(0.0f, 1.0f, 0.0f)));
+
+                float damping = 8.0f * deltaTime;
+
+
+                if (!forwardInput)
+                {
+                    float forwardSpeed =
+                        glm::dot(velocity, forward);
+
+                    velocity -=
+                        forward *
+                        (forwardSpeed * damping);
+                }
+
+
+                if (!lateralInput)
+                {
+                    float sideSpeed =
+                        glm::dot(velocity, right);
+
+                    velocity -=
+                        right *
+                        (sideSpeed * damping);
+                }
+
+                modelBody->setLinearVelocity(
+                    btVector3(
+                        velocity.x,
+                        vel.y(),
+                        velocity.z));
+            }
+        }
+
         if (physicsModels.size() > 1)
         {
             btRigidBody *modelBody = physicsModels[1].rigidBody;
             if (modelBody)
             {
+
+                if (!blendAnimationsInitialized)
+                {
+                    modelLoader->blendModelAnimations(1, {
+                                                             {0u, 1.0f},
+                                                             {1u, 0.0f}
+                                                         });
+                    blendAnimationsInitialized = true;
+                }
+
                 btVector3 velocity = modelBody->getLinearVelocity();
                 float speed = velocity.length();
 
+                const float minSpeed = 0.1f;
+                const float maxSpeed = 5.0f;
 
-                const float movingThreshold = 0.1f;
+                float runWeight = glm::clamp(
+                    (speed - minSpeed) / (maxSpeed - minSpeed),
+                    0.0f, 1.0f);
 
-                if (speed > movingThreshold && lastanimationState == 1)
-                {
 
-                    modelLoader->setModelAnimation(1,0);
-                    lastanimationState = 0;
-                }
-                if (speed <= movingThreshold && lastanimationState == 0)
-                {
-
-                    modelLoader->setModelAnimation(1,1);
-                    lastanimationState = 1;
-                }
+                modelLoader->setBlendWeights(1, {runWeight, 1.0f - runWeight});
             }
         }
-    
     }
 }
 
-        btRigidBody *ModelTransform::getPhysicsBody(size_t modelIndex)
+btRigidBody *ModelTransform::getPhysicsBody(size_t modelIndex)
+{
+    for (const auto &physicsModel : physicsModels)
+    {
+        if (physicsModel.modelIndex == modelIndex)
         {
-            for (const auto &physicsModel : physicsModels)
-            {
-                if (physicsModel.modelIndex == modelIndex)
-                {
-                    return physicsModel.rigidBody;
-                }
-            }
-            return nullptr;
+            return physicsModel.rigidBody;
         }
+    }
+    return nullptr;
+}
 
-        void ModelTransform::applyImpulse(size_t modelIndex, const glm::vec3 &impulse)
-        {
-            btRigidBody *body = getPhysicsBody(modelIndex);
+void ModelTransform::applyImpulse(size_t modelIndex, const glm::vec3 &impulse)
+{
+    btRigidBody *body = getPhysicsBody(modelIndex);
 
-            if (!body)
-                return;
+    if (!body)
+        return;
 
-            body->activate(true);
+    body->activate(true);
 
-            body->applyCentralImpulse(
-                btVector3(
-                    impulse.x,
-                    impulse.y,
-                    impulse.z));
-        }
-        void ModelTransform::applyForce(size_t modelIndex, const glm::vec3 &force)
-        {
-            btRigidBody *body = getPhysicsBody(modelIndex);
+    body->applyCentralImpulse(
+        btVector3(
+            impulse.x,
+            impulse.y,
+            impulse.z));
+}
+void ModelTransform::applyForce(size_t modelIndex, const glm::vec3 &force)
+{
+    btRigidBody *body = getPhysicsBody(modelIndex);
 
-            if (!body)
-                return;
+    if (!body)
+        return;
 
-            body->activate(true);
+    body->activate(true);
 
-            body->applyCentralForce(
-                btVector3(
-                    force.x,
-                    force.y,
-                    force.z));
-        }
-        void ModelTransform::applyTorque(size_t modelIndex, const glm::vec3 &torque)
-        {
-            btRigidBody *body = getPhysicsBody(modelIndex);
+    body->applyCentralForce(
+        btVector3(
+            force.x,
+            force.y,
+            force.z));
+}
+void ModelTransform::applyTorque(size_t modelIndex, const glm::vec3 &torque)
+{
+    btRigidBody *body = getPhysicsBody(modelIndex);
 
-            if (!body)
-                return;
+    if (!body)
+        return;
 
-            body->activate(true);
+    body->activate(true);
 
-            body->applyTorque(
-                btVector3(
-                    torque.x,
-                    torque.y,
-                    torque.z));
-        }
+    body->applyTorque(
+        btVector3(
+            torque.x,
+            torque.y,
+            torque.z));
+}

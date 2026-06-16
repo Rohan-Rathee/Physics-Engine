@@ -274,6 +274,104 @@ void Model::draw(Shader &shader, const glm::mat4& parentTransform, bool renderCo
     }
 }
 
+
+void ModelLoader::blendModelAnimations(
+    size_t modelIndex,
+    const std::vector<std::pair<unsigned int, float>>& layers)
+{
+
+    if (modelIndex >= models.size())
+    {
+        std::cerr << "ModelLoader::blendModelAnimations: invalid model index "
+                  << modelIndex << std::endl;
+        return;
+    }
+ 
+    if (layers.empty())
+    {
+        std::cerr << "ModelLoader::blendModelAnimations: layer list is empty, "
+                     "ignoring call." << std::endl;
+        return;
+    }
+ 
+    ModelData&    data  = models[modelIndex];
+    const aiScene* scene = data.model->getScene();
+ 
+    if (!scene || !scene->HasAnimations())
+    {
+        std::cerr << "ModelLoader::blendModelAnimations: model at index "
+                  << modelIndex << " has no animations." << std::endl;
+        return;
+    }
+ 
+
+
+
+    data.blendAnimations.clear();
+    data.blendAnimations.reserve(layers.size());
+ 
+
+    if (!data.animator)
+        data.animator = std::make_unique<Animator>();
+ 
+
+    std::vector<BlendLayer> animatorLayers;
+    animatorLayers.reserve(layers.size());
+ 
+    for (const auto& [animIndex, weight] : layers)
+    {
+        if (animIndex >= scene->mNumAnimations)
+        {
+            std::cerr << "ModelLoader::blendModelAnimations: animation index "
+                      << animIndex << " out of range (model has "
+                      << scene->mNumAnimations << " animations). "
+                         "Skipping this layer." << std::endl;
+            continue;
+        }
+ 
+
+        data.blendAnimations.push_back(
+            std::make_unique<Animation>(scene, data.model.get(), animIndex)
+        );
+ 
+        BlendLayer layer;
+        layer.animation = data.blendAnimations.back().get();
+        layer.weight    = weight;
+        layer.time      = 0.0f;
+ 
+        animatorLayers.push_back(layer);
+    }
+ 
+    if (animatorLayers.empty())
+    {
+        std::cerr << "ModelLoader::blendModelAnimations: no valid layers "
+                     "could be built." << std::endl;
+        return;
+    }
+ 
+
+
+    data.animator->SetBlendLayers(std::move(animatorLayers));
+ 
+
+
+    data.animation.reset(
+        new Animation(scene, data.model.get(),
+                      layers[0].first)
+    );
+}
+
+void ModelLoader::setBlendWeights(size_t modelIndex, const std::vector<float>& weights)
+{
+    if (modelIndex >= models.size() || !models[modelIndex].animator)
+        return;
+ 
+    Animator& animator = *models[modelIndex].animator;
+    for (size_t i = 0; i < weights.size(); i++)
+        animator.SetLayerWeight(i, weights[i]);
+}
+ 
+
 void Model::draw(Shader &shader, const glm::mat4& parentTransform, bool renderColliders, bool skipMeshTransform)
 {
     for (auto& meshInstance : meshes)

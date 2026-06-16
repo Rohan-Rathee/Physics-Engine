@@ -146,11 +146,16 @@ public:
 
 
 
-    void setModelAnimation(size_t modelIndex, unsigned int animationIndex = 0);
 
+    void setModelAnimation(size_t modelIndex, unsigned int animationIndex = 0);
+    void blendModelAnimations(size_t modelIndex, const std::vector<std::pair<unsigned int /*animIndex*/, float /*weight*/>>& layers);
 
 
     void updateAnimations(float deltaTime);
+    void setBlendWeights(
+    size_t modelIndex,
+    const std::vector<float>& weights
+);
 
     bool hasAnimation(size_t modelIndex) const;
 
@@ -166,6 +171,7 @@ private:
         glm::mat4 transform;
         std::unique_ptr<Animation> animation;
         std::unique_ptr<Animator> animator;
+        std::vector<std::unique_ptr<Animation>> blendAnimations;
     };
     std::vector<ModelData> models;
 
