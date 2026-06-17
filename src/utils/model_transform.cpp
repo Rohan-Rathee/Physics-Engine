@@ -166,32 +166,35 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
             int keypress = 0;
             bool forwardInput = 0;
             bool lateralInput = 0;
-            
+            glm::vec3 moveDir(0.0f);
 
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_W) == GLFW_PRESS)
             {
-                applyForce(physicsModels[1].modelIndex, cameraForward * 400.0f);
-                keypress = 1;
+                moveDir += cameraForward;
                 forwardInput = true;
             }
+
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_S) == GLFW_PRESS)
             {
-                applyForce(physicsModels[1].modelIndex, -cameraForward * 200.0f);
-                keypress = 1;
+                moveDir -= cameraForward;
                 forwardInput = true;
             }
 
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_A) == GLFW_PRESS)
             {
-                applyForce(physicsModels[1].modelIndex, -cameraRight * 200.0f);
-                keypress = 1;
+                moveDir -= cameraRight;
                 lateralInput = true;
             }
+
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_D) == GLFW_PRESS)
             {
-                applyForce(physicsModels[1].modelIndex, cameraRight * 200.0f);
-                keypress = 1;
+                moveDir += cameraRight;
                 lateralInput = true;
+            }
+
+            if (glm::length(moveDir) > 0.001f)
+            {
+                moveDir = glm::normalize(moveDir);
             }
 
             btVector3 startPos = modelBody->getWorldTransform().getOrigin();
@@ -208,7 +211,7 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
                 keypress = 1;
             }
 
-            if (rayCallback.hasHit())
+            if (rayCallback.hasHit())  
             {
                 isModelInAir = false;
             }
@@ -222,6 +225,55 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
                 isModelInAir = true;
             }
 
+            btVector3 vel = modelBody->getLinearVelocity();
+
+            const float moveSpeed = 8.0f;
+
+            if (!isModelInAir)
+            {
+                glm::vec2 currentVel(
+                    vel.x(),
+                    vel.z());
+
+                glm::vec2 targetVel(0.0f);
+
+                if (glm::length(moveDir) > 0.001f)
+                {
+                    targetVel =
+                        glm::vec2(
+                            moveDir.x * moveSpeed,
+                            moveDir.z * moveSpeed);
+                }
+
+                float acceleration = 12.0f;
+                float deceleration = 4.0f;
+
+                float blend =
+                    glm::length(targetVel) > glm::length(currentVel)
+                        ? acceleration
+                        : deceleration;
+
+                currentVel = glm::mix(
+                    currentVel,
+                    targetVel,
+                    blend * deltaTime);
+
+                modelBody->setLinearVelocity(
+                    btVector3(
+                        currentVel.x,
+                        vel.y(),
+                        currentVel.y));
+            }
+            else
+            {
+
+                if (glm::length(moveDir) > 0.001f)
+                {
+                    applyForce(
+                        physicsModels[1].modelIndex,
+                        moveDir * 200.0f);
+                }
+            }
 
 
 
@@ -252,7 +304,7 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
                 angle -= SIMD_2_PI;
 
 
-            float turnSpeed = 5.0f;
+            float turnSpeed = 50.0f;
             physicsModels[1].rigidBody->setAngularVelocity(axis * (angle * turnSpeed));
 
             physicsSystem->update(deltaTime);
@@ -322,59 +374,6 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
                     g_camera->Pitch = glm::degrees(asin(g_camera->Front.y));
                 }
             }
-
-            if (!isModelInAir)
-            {
-                btVector3 vel = modelBody->getLinearVelocity();
-
-                glm::vec3 velocity(
-                    vel.x(),
-                    vel.y(),
-                    vel.z());
-
-
-                glm::vec3 forward = modelFront;
-                forward.y = 0.0f;
-
-                if (glm::length(forward) > 0.001f)
-                    forward = glm::normalize(forward);
-
-                glm::vec3 right =
-                    glm::normalize(
-                        glm::cross(
-                            forward,
-                            glm::vec3(0.0f, 1.0f, 0.0f)));
-
-                float damping = 8.0f * deltaTime;
-
-
-                if (!forwardInput)
-                {
-                    float forwardSpeed =
-                        glm::dot(velocity, forward);
-
-                    velocity -=
-                        forward *
-                        (forwardSpeed * damping);
-                }
-
-
-                if (!lateralInput)
-                {
-                    float sideSpeed =
-                        glm::dot(velocity, right);
-
-                    velocity -=
-                        right *
-                        (sideSpeed * damping);
-                }
-
-                modelBody->setLinearVelocity(
-                    btVector3(
-                        velocity.x,
-                        vel.y(),
-                        velocity.z));
-            }
         }
 
         if (physicsModels.size() > 1)
@@ -393,7 +392,11 @@ void ModelTransform::updateFrameTransforms(float deltaTime)
                 }
 
                 btVector3 velocity = modelBody->getLinearVelocity();
-                float speed = velocity.length();
+                float speed =
+                    glm::length(
+                        glm::vec2(
+                            velocity.x(),
+                            velocity.z()));
 
                 const float minSpeed = 0.1f;
                 const float maxSpeed = 5.0f;
