@@ -1,82 +1,86 @@
-#include "input_system.h"
-#include "render_system.h"
-#include <iostream>
-
-InputSystem* InputSystem::instance = nullptr;
-
-
-
-void InputSystem::mouseCallback(GLFWwindow* window, double xpos, double ypos) {
-    if (InputSystem::instance == nullptr) return;
-    
-    if (InputSystem::instance->firstMouse) {
-        InputSystem::instance->lastX = static_cast<float>(xpos);
-        InputSystem::instance->lastY = static_cast<float>(ypos);
-        InputSystem::instance->firstMouse = false;
-    }
-
-    float xoffset = static_cast<float>(xpos) - InputSystem::instance->lastX;
-    float yoffset = InputSystem::instance->lastY - static_cast<float>(ypos);
-
-    InputSystem::instance->lastX = static_cast<float>(xpos);
-    InputSystem::instance->lastY = static_cast<float>(ypos);
-
-    InputSystem::instance->camera.ProcessMouseMovement(xoffset, yoffset);
-}
-
-
-
-void InputSystem::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-    if (InputSystem::instance == nullptr) return;
-    InputSystem::instance->camera.ProcessMouseScroll(static_cast<float>(yoffset));
-}
-
-
-
-void InputSystem::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-    if (InputSystem::instance && InputSystem::instance->renderSystem) {
-        InputSystem::instance->renderSystem->setScreenSize(width, height);
-    }
-}
-
-
-InputSystem::InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight)
-    : window(w), camera(cam), renderSystem(nullptr), deltaTime(0.0f), firstMouse(true) {
-    lastX = screenWidth / 2.0f;
-    lastY = screenHeight / 2.0f;
-    
-    InputSystem::instance = this;
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouseCallback);
-    glfwSetScrollCallback(window, scrollCallback);
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-}
-
-
-void InputSystem::processInput() {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.ProcessKeyboard(RIGHT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    else
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    if (renderSystem)
-    {
-        renderSystem->setBulletDebugDrawEnabled(
-            glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS
-        );
-    }
-
-
+#include "input_system.h" 
+#include "render_system.h" 
+#include <iostream> 
+InputSystem* InputSystem::instance = nullptr; 
+void InputSystem::mouseCallback(GLFWwindow* window, double xpos, double ypos) { 
+    if (InputSystem::instance == nullptr) return; 
+     
+    if (InputSystem::instance->firstMouse) { 
+        InputSystem::instance->lastX = static_cast<float>(xpos); 
+        InputSystem::instance->lastY = static_cast<float>(ypos); 
+        InputSystem::instance->firstMouse = false; 
+    } 
+    float xoffset = static_cast<float>(xpos) - InputSystem::instance->lastX; 
+    float yoffset = InputSystem::instance->lastY - static_cast<float>(ypos);   
+    InputSystem::instance->lastX = static_cast<float>(xpos); 
+    InputSystem::instance->lastY = static_cast<float>(ypos); 
+    InputSystem::instance->camera.ProcessMouseMovement(xoffset, yoffset); 
+} 
+void InputSystem::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) { 
+    if (InputSystem::instance == nullptr) return; 
+    InputSystem::instance->camera.ProcessMouseScroll(static_cast<float>(yoffset)); 
+} 
+void InputSystem::framebufferSizeCallback(GLFWwindow* window, int width, int height) { 
+    glViewport(0, 0, width, height); 
+    if (InputSystem::instance && InputSystem::instance->renderSystem) { 
+        InputSystem::instance->renderSystem->setScreenSize(width, height); 
+    } 
+} 
+InputSystem::InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight) 
+    : window(w), camera(cam), renderSystem(nullptr), deltaTime(0.0f), firstMouse(true) { 
+    lastX = screenWidth / 2.0f; 
+    lastY = screenHeight / 2.0f; 
+     
+    InputSystem::instance = this; 
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
+    glfwSetCursorPosCallback(window, mouseCallback); 
+    glfwSetScrollCallback(window, scrollCallback); 
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback); 
+} 
+void InputSystem::processInput() { 
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) 
+        glfwSetWindowShouldClose(window, true); 
+      
+      
+    static bool tabWasPressed = false; 
+    bool tabPressed = glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS; 
+    if (tabPressed && !tabWasPressed) 
+        spectatorMode = !spectatorMode; 
+    tabWasPressed = tabPressed; 
+    currentInput = InputState{};   
+    if (spectatorMode) 
+    { 
+          
+          
+          
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) 
+            camera.ProcessKeyboard(FORWARD, deltaTime); 
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) 
+            camera.ProcessKeyboard(BACKWARD, deltaTime); 
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) 
+            camera.ProcessKeyboard(LEFT, deltaTime); 
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) 
+            camera.ProcessKeyboard(RIGHT, deltaTime); 
+    } 
+    else 
+    { 
+          
+          
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) currentInput.moveAxis.y += 1.0f; 
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) currentInput.moveAxis.y -= 1.0f; 
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) currentInput.moveAxis.x -= 1.0f; 
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) currentInput.moveAxis.x += 1.0f; 
+        currentInput.jumpPressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS; 
+        currentInput.firePressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS; 
+    } 
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) 
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
+    else 
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); 
+    if (renderSystem) 
+    { 
+        renderSystem->setBulletDebugDrawEnabled( 
+            glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS 
+        ); 
+    } 
 }

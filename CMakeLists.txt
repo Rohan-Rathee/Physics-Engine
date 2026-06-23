@@ -1,59 +1,56 @@
-cmake_minimum_required(VERSION 3.10)
-
-if (NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})
-    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
-endif()
-
-project(Physics-Engine)
-
-# Set C++ standard to 20
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Find packages (provided by vcpkg toolchain)
-find_package(glfw3 CONFIG REQUIRED)
-find_package(glad CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
-find_package(assimp CONFIG REQUIRED)
-find_package(CURL CONFIG REQUIRED)
-find_package(Bullet CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
-
-# Add executables
-add_executable(main 
-    src/main.cpp
-    src/core/engine.cpp
-    src/core/time_manager.cpp
-    src/systems/input_system.cpp
-    src/systems/render_system.cpp
-    src/systems/window_system.cpp
-    src/systems/physics_system.cpp
-    src/scene/entity.cpp
-    src/scene/scene.cpp
-    src/components/transform.cpp
-    src/utils/model_loader.cpp
-    src/utils/model_transform.cpp
-    src/utils/bullet_debug_drawer.cpp
-    src/systems/imgui_system.cpp
-    src/animation/animator.cpp
-    src/animation/animation.cpp
-    src/animation/assimp_glm_helpers.h
-    src/animation/bone.cpp
-)
-
-# Link libraries
-target_link_libraries(main PRIVATE 
-    glfw
-    glad::glad
-    glm::glm
-    assimp::assimp
-    CURL::libcurl
-    ${BULLET_LIBRARIES}
-    imgui::imgui
-)
-
-# Add include directories for header-only libraries
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include")
-    target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include")
-    target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include/bullet")
-endif()
+cmake_minimum_required(VERSION 3.10) 
+if (NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT}) 
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file") 
+endif() 
+project(Physics-Engine) 
+# Set C++ standard to 20 
+set(CMAKE_CXX_STANDARD 20) 
+set(CMAKE_CXX_STANDARD_REQUIRED ON) 
+# Find packages (provided by vcpkg toolchain) 
+find_package(glfw3 CONFIG REQUIRED) 
+find_package(glad CONFIG REQUIRED) 
+find_package(glm CONFIG REQUIRED) 
+find_package(assimp CONFIG REQUIRED) 
+find_package(CURL CONFIG REQUIRED) 
+find_package(Bullet CONFIG REQUIRED) 
+find_package(imgui CONFIG REQUIRED) 
+# Add executables 
+add_executable(main  
+    src/main.cpp 
+    src/core/engine.cpp 
+    src/core/time_manager.cpp 
+    src/systems/input_system.cpp 
+    src/systems/render_system.cpp 
+    src/systems/window_system.cpp 
+    src/systems/physics_system.cpp 
+    src/scene/entity.cpp 
+    src/scene/scene.cpp 
+    src/components/transform.cpp 
+    src/utils/model_loader.cpp 
+    src/utils/model_transform.cpp 
+    src/utils/bullet_debug_drawer.cpp 
+    src/systems/imgui_system.cpp 
+    src/animation/animator.cpp 
+    src/animation/animation.cpp 
+    src/animation/assimp_glm_helpers.h 
+    src/animation/bone.cpp 
+    src/characters/character.cpp 
+    src/characters/human_controller.cpp 
+    src/systems/camera_follow.cpp 
+    src/characters/ai_controller.cpp 
+) 
+# Link libraries 
+target_link_libraries(main PRIVATE  
+    glfw 
+    glad::glad 
+    glm::glm 
+    assimp::assimp 
+    CURL::libcurl 
+    ${BULLET_LIBRARIES} 
+    imgui::imgui 
+) 
+# Add include directories for header-only libraries 
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include") 
+    target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include") 
+    target_include_directories(main PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed/x64-windows/include/bullet") 
+endif() 

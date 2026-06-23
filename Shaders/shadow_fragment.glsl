@@ -1,6 +1,5 @@
-#version 460 core
-
-void main()
-{
-
-}
+#version 460 core 
+void main() 
+{ 
+      
+}        
