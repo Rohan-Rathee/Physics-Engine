@@ -50,7 +50,7 @@ void Animation::ReadMissingBones(const aiAnimation* animation, Model& model)
     boneInfoMap = model.getBoneInfoMap(); 
     int boneCount = model.getBoneCount(); 
     const int numChannels = static_cast<int>(animation->mNumChannels); 
-    bones.reserve(numChannels); 
+    bones.reserve(numChannels);
     for (int i = 0; i < numChannels; i++) 
     { 
         const aiNodeAnim* channel  = animation->mChannels[i]; 

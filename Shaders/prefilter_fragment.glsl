@@ -62,16 +62,29 @@ void main()
             float NdotH = max(dot(N, H), 0.0); 
             float HdotV = max(dot(H, V), 0.0); 
             float D     = DistributionGGX(NdotH, roughness); 
-            float pdf   = (D * NdotH / (4.0 * HdotV)) + 0.0001; 
+            float pdf = (D * NdotH /
+            max(4.0 * HdotV, 0.0001))
+            + 0.0001;
             float saTexel  = 4.0 * PI / (6.0 * envResolution * envResolution); 
             float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001); 
-            float mipLevel = (roughness == 0.0) 
-                ? 0.0 
-                : 0.5 * log2(saSample / saTexel); 
+            float mipLevel = (roughness == 0.0)
+                ? 0.0
+                : 0.5 * log2(saSample / saTexel);
+
+            mipLevel = clamp(mipLevel, 0.0, 4.0); 
             prefilteredColor += textureLod(environmentMap, L, mipLevel).rgb * NdotL; 
             totalWeight      += NdotL; 
         } 
     } 
-    prefilteredColor = prefilteredColor / totalWeight; 
+        if (totalWeight > 0.0001)
+        prefilteredColor /= totalWeight;
+    else
+        prefilteredColor = vec3(1.0, 0.0, 1.0);
     FragColor = vec4(prefilteredColor, 1.0); 
+    if (any(isnan(prefilteredColor)))
+    {
+        FragColor = vec4(1,0,1,1);
+        return;
+    }
+    
 } 

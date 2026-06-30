@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Sun",
+    "type": 1,
+    "enabled": true,
+    "color": [0.125000,-0.026000,0.176000],
+    "intensity": 3,
+    "position": [0.000000,3.000000,0.000000],
+    "direction": [-0.276172,-0.920575,-0.276172],
+    "constant": 1,
+    "linear": 0.09,
+    "quadratic": 0.032,
+    "innerCutoff": 12.5,
+    "outerCutoff": 17.5
+  },
+  {
+    "name": "Point Light",
+    "type": 0,
+    "enabled": true,
+    "color": [0.024390,0.366993,0.995098],
+    "intensity": 158.489,
+    "position": [-5.000000,21.799999,11.500000],
+    "direction": [-0.276172,-0.920575,-0.276172],
+    "constant": 1,
+    "linear": 0.09,
+    "quadratic": 0.032,
+    "innerCutoff": 12.5,
+    "outerCutoff": 17.5
+  },
+  {
+    "name": "Point Light (copy)",
+    "type": 0,
+    "enabled": true,
+    "color": [1.181000,0.100000,0.085000],
+    "intensity": 158.489,
+    "position": [-1.600000,22.900000,55.599998],
+    "direction": [-0.276172,-0.920575,-0.276172],
+    "constant": 1,
+    "linear": 0.09,
+    "quadratic": 0.032,
+    "innerCutoff": 12.5,
+    "outerCutoff": 17.5
+  }
+]

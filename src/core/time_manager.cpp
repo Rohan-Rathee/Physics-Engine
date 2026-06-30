@@ -10,4 +10,4 @@ void TimeManager::update() {
 float TimeManager::getFPS() const { 
     if (deltaTime == 0.0f) return 0.0f; 
     return 1.0f / deltaTime; 
-} 
+}

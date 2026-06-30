@@ -7,21 +7,21 @@
 #include "bone.h" 
 class Model; 
 struct AssimpNodeData 
-{ 
+{    
     glm::mat4              transformation{ 1.0f }; 
     std::string            name; 
     int                    childrenCount = 0; 
     std::vector<AssimpNodeData> children; 
-}; 
+};
 struct BoneInfo 
 { 
-    int       id     = -1; 
-    glm::mat4 offset{ 1.0f }; 
-}; 
-class Animation 
+    int       id     = -1;    
+    glm::mat4 offset{ 1.0f };
+};          
+class Animation  
 { 
-public: 
-    Animation() = default; 
+public:     
+    Animation() = default;
     Animation(const aiScene* scene, Model* model, unsigned int animationIndex = 0); 
     Bone* FindBone(const std::string& name); 
       

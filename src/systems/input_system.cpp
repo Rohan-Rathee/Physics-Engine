@@ -1,8 +1,32 @@
 #include "input_system.h" 
 #include "render_system.h" 
+#include <imgui.h>
 #include <iostream> 
+#include "imgui_impl_glfw.h"
 InputSystem* InputSystem::instance = nullptr; 
-void InputSystem::mouseCallback(GLFWwindow* window, double xpos, double ypos) { 
+void InputSystem::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+
+
+}
+
+void InputSystem::mouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    ImGui_ImplGlfw_CursorPosCallback(window, xpos, ypos);
+
+    if (ImGui::GetIO().WantCaptureMouse)
+        return;
+    if (!instance)
+        return;
+
+
+    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL)
+        return;
+
+    if (ImGui::GetIO().WantCaptureMouse)
+        return;
+
     if (InputSystem::instance == nullptr) return; 
      
     if (InputSystem::instance->firstMouse) { 
@@ -17,6 +41,11 @@ void InputSystem::mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     InputSystem::instance->camera.ProcessMouseMovement(xoffset, yoffset); 
 } 
 void InputSystem::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) { 
+        ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+
+    if (ImGui::GetIO().WantCaptureMouse)
+        return;
+
     if (InputSystem::instance == nullptr) return; 
     InputSystem::instance->camera.ProcessMouseScroll(static_cast<float>(yoffset)); 
 } 
@@ -25,6 +54,7 @@ void InputSystem::framebufferSizeCallback(GLFWwindow* window, int width, int hei
     if (InputSystem::instance && InputSystem::instance->renderSystem) { 
         InputSystem::instance->renderSystem->setScreenSize(width, height); 
     } 
+    InputSystem::instance->renderSystem->resizeBloomBuffers(width, height);
 } 
 InputSystem::InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight) 
     : window(w), camera(cam), renderSystem(nullptr), deltaTime(0.0f), firstMouse(true) { 
@@ -33,11 +63,18 @@ InputSystem::InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, u
      
     InputSystem::instance = this; 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
-    glfwSetCursorPosCallback(window, mouseCallback); 
-    glfwSetScrollCallback(window, scrollCallback); 
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback); 
+    glfwSetCursorPosCallback(window, InputSystem::mouseCallback); 
+    glfwSetScrollCallback(window, InputSystem::scrollCallback);
+    glfwSetFramebufferSizeCallback(window, InputSystem::framebufferSizeCallback);
+    glfwSetMouseButtonCallback(window, InputSystem::mouseButtonCallback);
+
 } 
 void InputSystem::processInput() { 
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (io.WantCaptureKeyboard || io.WantCaptureMouse)
+        return;
+        
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) 
         glfwSetWindowShouldClose(window, true); 
       

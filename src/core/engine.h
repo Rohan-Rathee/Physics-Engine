@@ -14,11 +14,16 @@
 #include <memory> 
 #include <vector> 
 #include "../systems/imgui_system.h" 
+#include "../utils/light_manager.h"
+#include "../characters/spawner.h"
+#include "../characters/chess_piece_controller.h"
 class Character; 
 extern Camera* g_camera; 
 class Engine { 
 private: 
+    std::unique_ptr<SpawnManager> spawnManager;
     std::unique_ptr<WindowSystem> windowSystem; 
+    std::unique_ptr<LightManager> lightManager;
     std::unique_ptr<ImGuiSystem> imguiSystem; 
     std::unique_ptr<RenderSystem> renderSystem; 
     std::unique_ptr<InputSystem> inputSystem; 
@@ -29,20 +34,29 @@ private:
     std::unique_ptr<ModelTransform> modelTransform; 
     std::shared_ptr<Character> playerCharacter; 
     std::vector<std::shared_ptr<Character>> bots; 
+    
     ThirdPersonCameraRig cameraRig; 
     unsigned int screenWidth; 
     unsigned int screenHeight; 
     bool running; 
+
+
+
+    float speedForPiece(ChessPieceType pieceType);
 public: 
     Engine(unsigned int width, unsigned int height, const std::string& title); 
     ~Engine(); 
     bool initialize(); 
     void run(); 
     void shutdown(); 
-    std::shared_ptr<Character> spawnBot(const std::string& modelPath, const glm::vec3& spawnPosition, std::vector<glm::vec3> patrolRoute); 
+    std::shared_ptr<Character> spawnBot(
+    const std::string&     modelPath,
+    const glm::vec3&       spawnPosition,
+    std::vector<glm::vec3> patrolRoute,
+    ChessPieceType         pieceType    = ChessPieceType::Pawn,
+    float                  respawnDelay = 5.0f);
     Scene* getScene() { return scene.get(); } 
     Camera* getCamera() { return camera.get(); } 
     PhysicsSystem* getPhysicsSystem() { return physicsSystem.get(); } 
 }; 
-#endif 
- 
+#endif

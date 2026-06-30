@@ -38,6 +38,9 @@ add_executable(main
     src/characters/human_controller.cpp 
     src/systems/camera_follow.cpp 
     src/characters/ai_controller.cpp 
+    src/utils/light_manager.cpp
+    src/characters/chess_piece_controller.cpp
+    src/characters/spawner.cpp
 ) 
 # Link libraries 
 target_link_libraries(main PRIVATE  

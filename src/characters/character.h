@@ -21,7 +21,11 @@ public:
               unsigned int runAnimIndex = 0, 
               unsigned int idleAnimIndex = 1); 
       
-      
+    void  takeDamage(float amount);
+    void  heal(float amount);
+    bool  isDead()     const { return health <= 0.0f; }
+    float getHealth()  const { return health; }
+    float getMaxHealth() const { return maxHealth; }
     void prePhysicsUpdate(float deltaTime) override; 
       
       
@@ -32,7 +36,11 @@ public:
     glm::vec3 getUp() const; 
     bool isAirborne() const { return isInAir; } 
     IController* getController() const { return controller.get(); } 
+    
+    void    respawn(const glm::vec3& position);
 private: 
+    float health    = 100.0f;
+    float maxHealth = 100.0f;
     void syncGroundedState(); 
     void applyMovement(const ControlInput& input, float deltaTime); 
     void applyFacing(const ControlInput& input, float deltaTime); 

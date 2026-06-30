@@ -16,4 +16,4 @@ public:
       
       
     virtual ControlInput getInput(float deltaTime, const glm::vec3& currentPosition) = 0; 
-}; 
+};

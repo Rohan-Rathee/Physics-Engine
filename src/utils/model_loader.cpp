@@ -10,6 +10,7 @@
 #define GLM_ENABLE_EXPERIMENTAL 
 #include <unordered_map> 
 #include <glm/gtx/quaternion.hpp> 
+#include <set>
 #include <btBulletDynamicsCommon.h> 
 using namespace std; 
 bool IsColliderMesh(const std::string& name) 
@@ -32,120 +33,119 @@ unsigned int CreateWhiteTexture()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
      
     return textureID; 
-} 
+}
+
+
+static unsigned int GetDefaultWhiteTexture()
+{
+    static unsigned int whiteTexID = 0;
+    if (whiteTexID == 0)
+        whiteTexID = CreateWhiteTexture();
+    return whiteTexID;
+}
+
+
+static texture MakeWhiteFallback(const std::string& typeName)
+{
+    texture t;
+    t.id   = GetDefaultWhiteTexture();
+    t.type = typeName;
+    t.path = "__white_fallback__";
+    return t;
+}
+
+
+
+
+static unsigned int GetDefaultBlackTexture()
+{
+    static unsigned int blackTexID = 0;
+    if (blackTexID == 0)
+    {
+        unsigned char px[4] = {0, 0, 0, 255};
+        glGenTextures(1, &blackTexID);
+        glBindTexture(GL_TEXTURE_2D, blackTexID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+    return blackTexID;
+}
   
-unsigned int TextureFromEmbeddedData(const aiTexel *data, unsigned int width, unsigned int height) 
+unsigned int TextureFromEmbeddedData(const aiTexel *data, unsigned int width, unsigned int height, bool isSRGB = false) 
 { 
     unsigned int textureID; 
     glGenTextures(1, &textureID); 
-    glBindTexture(GL_TEXTURE_2D, textureID); 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); 
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    GLenum internalFormat = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA;
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); 
     glGenerateMipmap(GL_TEXTURE_2D); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR ); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f); 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
     return textureID; 
 } 
   
-unsigned int TextureFromFile(const char *path, const string &directory, const aiScene* scene = nullptr) 
+unsigned int TextureFromFile(const char *path, const string &directory, const aiScene* scene = nullptr, bool isSRGB = false) 
 { 
     string filename = string(path); 
-     
-      
     if (filename[0] == '*') 
     { 
-        if (!scene) 
-        { 
-            std::cerr << "Embedded texture reference but no scene provided: " << filename << std::endl; 
-            return 0; 
-        } 
-         
-          
+        if (!scene) { std::cerr << "Embedded texture reference but no scene provided: " << filename << std::endl; return 0; } 
         int textureIndex = std::atoi(filename.c_str() + 1); 
-        if (textureIndex < 0 || textureIndex >= static_cast<int>(scene->mNumTextures)) 
-        { 
-            std::cerr << "Invalid embedded texture index: " << textureIndex << std::endl; 
-            return 0; 
-        } 
-         
+        if (textureIndex < 0 || textureIndex >= static_cast<int>(scene->mNumTextures)) { std::cerr << "Invalid embedded texture index: " << textureIndex << std::endl; return 0; } 
         aiTexture* embeddedTexture = scene->mTextures[textureIndex]; 
-         
         if (embeddedTexture->mHeight == 0) 
         { 
-              
             int width, height, nrComponents; 
-            unsigned char *data = stbi_load_from_memory( 
-                reinterpret_cast<unsigned char*>(embeddedTexture->pcData), 
-                embeddedTexture->mWidth, 
-                &width, &height, &nrComponents, 4 
-            ); 
-             
+            unsigned char *data = stbi_load_from_memory(reinterpret_cast<unsigned char*>(embeddedTexture->pcData), embeddedTexture->mWidth, &width, &height, &nrComponents, 4); 
             if (data) 
             { 
                 unsigned int textureID; 
                 glGenTextures(1, &textureID); 
                 glBindTexture(GL_TEXTURE_2D, textureID); 
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); 
+                GLenum internalFormat = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA;
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); 
                 glGenerateMipmap(GL_TEXTURE_2D); 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR ); 
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f); 
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
                 stbi_image_free(data); 
                 return textureID; 
             } 
-            else 
-            { 
-                std::cerr << "Failed to decompress embedded texture: " << filename << std::endl; 
-                return 0; 
-            } 
+            else { std::cerr << "Failed to decompress embedded texture: " << filename << std::endl; return 0; } 
         } 
         else 
         { 
-              
-            unsigned int textureID = TextureFromEmbeddedData( 
-                reinterpret_cast<aiTexel*>(embeddedTexture->pcData), 
-                embeddedTexture->mWidth, 
-                embeddedTexture->mHeight 
-            ); 
-            return textureID; 
+            return TextureFromEmbeddedData(reinterpret_cast<aiTexel*>(embeddedTexture->pcData), embeddedTexture->mWidth, embeddedTexture->mHeight, isSRGB); 
         } 
     } 
-     
-      
     string fullPath = directory + '/' + filename; 
     unsigned int textureID = 0; 
     glGenTextures(1, &textureID); 
-      
     int width, height, nrComponents; 
     unsigned char *data = stbi_load(fullPath.c_str(), &width, &height, &nrComponents, 0); 
-     
     if (data && width > 0 && height > 0) 
     { 
-        GLenum format = GL_RGB; 
-        if (nrComponents == 1) 
-            format = GL_RED; 
-        else if (nrComponents == 3) 
-            format = GL_RGB; 
-        else if (nrComponents == 4) 
-            format = GL_RGBA; 
+        GLenum internalFormat, dataFormat;
+        if (nrComponents == 1)      { internalFormat = GL_RED;                              dataFormat = GL_RED; }
+        else if (nrComponents == 3) { internalFormat = isSRGB ? GL_SRGB8        : GL_RGB;  dataFormat = GL_RGB; }
+        else                        { internalFormat = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA; dataFormat = GL_RGBA; }
         glBindTexture(GL_TEXTURE_2D, textureID); 
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data); 
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data); 
         glGenerateMipmap(GL_TEXTURE_2D); 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR ); 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f); 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
         stbi_image_free(data); 
     } 
-    else 
-    { 
-        if (data) stbi_image_free(data); 
-    } 
+    else { if (data) stbi_image_free(data); } 
     return textureID; 
 } 
 Mesh::Mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures) 
@@ -155,58 +155,78 @@ Mesh::Mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std:
     this->textures = textures; 
     setupMesh(); 
 } 
-void Mesh::draw(Shader &shader) 
-{ 
-    unsigned int diffuseNr = 1; 
-    unsigned int specularNr = 1; 
-    for(unsigned int i = 0; i < textures.size(); i++) 
-    { 
-        glActiveTexture(GL_TEXTURE0 + i);   
-          
-        std::string number; 
-        std::string name = textures[i].type; 
-        if(name == "texture_diffuse") 
-            number = std::to_string(diffuseNr++); 
-        else if(name == "texture_specular") 
-            number = std::to_string(specularNr++); 
-          
-        std::string uniformName = name + number; 
-        shader.setInt(uniformName.c_str(), i); 
-        glBindTexture(GL_TEXTURE_2D, textures[i].id); 
-    } 
-    glActiveTexture(GL_TEXTURE0); 
-      
-    glBindVertexArray(VAO); 
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0); 
-    glBindVertexArray(0); 
-} 
-void Mesh::setupMesh() 
-{ 
-    glGenVertexArrays(1, &VAO); 
-    glGenBuffers(1, &VBO); 
-    glGenBuffers(1, &EBO); 
-   
-    glBindVertexArray(VAO); 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO); 
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex), &vertices[0], GL_STATIC_DRAW);   
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); 
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),  
-                 &indices[0], GL_STATIC_DRAW); 
-      
-    glEnableVertexAttribArray(0);	 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); 
-      
-    glEnableVertexAttribArray(1);	 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, normal)); 
-      
-    glEnableVertexAttribArray(2);	 
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, texCoords)); 
-    glEnableVertexAttribArray(3); 
-    glVertexAttribIPointer(3, 4, GL_INT, sizeof(vertex), (void*)offsetof(vertex, boneIDs)); 
-    glEnableVertexAttribArray(4); 
-    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, weights)); 
-    glBindVertexArray(0); 
-} 
+void Mesh::draw(Shader &shader)
+{
+
+    shader.setVec3 ("materialBaseColor",  material.baseColor);
+    shader.setFloat("materialMetallic",   material.metallic);
+    shader.setFloat("materialRoughness",  material.roughness);
+    shader.setFloat("materialAO",         material.ao);
+ 
+
+    shader.setVec3 ("materialEmissive",   material.emissive);
+    shader.setFloat("emissiveStrength",   material.emissiveIntensity);
+ 
+
+    bindPBRTextures(shader);
+ 
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+ 
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void Mesh::setupMesh()
+{
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex), &vertices[0], GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
+
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 
+                          (void*)offsetof(vertex, normal));
+
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), 
+                          (void*)offsetof(vertex, texCoords));
+
+
+    glEnableVertexAttribArray(3);
+    glVertexAttribIPointer(3, 4, GL_INT, sizeof(vertex), 
+                           (void*)offsetof(vertex, boneIDs));
+
+
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), 
+                          (void*)offsetof(vertex, weights));
+
+
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 
+                          (void*)offsetof(vertex, tangent));
+
+
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 
+                          (void*)offsetof(vertex, bitangent));
+
+    glBindVertexArray(0);
+}
+
 void SetVertexBoneData(vertex& vert, int boneID, float weight) 
 { 
     for (int i = 0; i < MAX_BONE_INFLUENCE; i++) 
@@ -419,8 +439,7 @@ btCollisionShape* Model::buildCompoundBoxCollider()
     btCompoundShape* compound = new btCompoundShape(); 
     for (const auto& meshInstance : meshes) 
     { 
-        if (!IsColliderMesh(meshInstance.name)) 
-            continue; 
+
         if (meshInstance.mesh.vertices.empty()) 
             continue; 
         glm::vec3 minBounds(FLT_MAX); 
@@ -726,67 +745,390 @@ void Model::ExtractBoneWeights(std::vector<vertex>& vertices, aiMesh* mesh)
         } 
     } 
 } 
-Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) 
-{ 
-    std::vector<vertex> vertices; 
-    std::vector<unsigned int> indices; 
-    std::vector<texture> textures; 
-    for(unsigned int i = 0; i < mesh->mNumVertices; i++) 
-    { 
-        vertex vertex; 
-        glm::vec3 vector;  
-        vector.x = mesh->mVertices[i].x; 
-        vector.y = mesh->mVertices[i].y; 
-        vector.z = mesh->mVertices[i].z;  
-        vertex.position = vector; 
-        if(mesh->HasNormals()) 
-        { 
-            vector.x = mesh->mNormals[i].x; 
-            vector.y = mesh->mNormals[i].y; 
-            vector.z = mesh->mNormals[i].z; 
-            vertex.normal = vector; 
-        } 
-         
-        if(mesh->mTextureCoords[0])  
-        { 
-            glm::vec2 vec; 
-            vec.x = mesh->mTextureCoords[0][i].x;  
-            vec.y = mesh->mTextureCoords[0][i].y; 
-            vertex.texCoords = vec; 
-        } 
-        else 
-            vertex.texCoords = glm::vec2(0.0f, 0.0f); 
-        vertices.push_back(vertex); 
-    } 
-    for(unsigned int i = 0; i < mesh->mNumFaces; i++) 
-    { 
-        aiFace face = mesh->mFaces[i]; 
-        for(unsigned int j = 0; j < face.mNumIndices; j++) 
-            indices.push_back(face.mIndices[j]); 
-    } 
-    if(mesh->mMaterialIndex >= 0) 
-    { 
-        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex]; 
-        std::vector<texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse"); 
-        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end()); 
-        std::vector<texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular"); 
-        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end()); 
-    } 
-      
-    if(textures.empty()) 
-    { 
-        texture defaultTexture; 
-        defaultTexture.id = CreateWhiteTexture(); 
-        defaultTexture.type = "texture_diffuse"; 
-        defaultTexture.path = "default_white"; 
-        textures.push_back(defaultTexture); 
-    } 
-     
-    ExtractBoneWeights(vertices, mesh); 
-    return Mesh(vertices, indices, textures); 
-} 
+
+
+void Mesh::bindPBRTextures(Shader &shader)
+{
+
+
+    shader.setBool("hasNormalMap",            false);
+    shader.setBool("hasMetallicRoughnessMap", false);
+    shader.setBool("hasAOMap",                false);
+    shader.setBool("hasEmissiveMap",          false);
+ 
+    bool filledDiffuse  = false;
+    bool filledMR       = false;
+    bool filledAO       = false;
+    bool filledEmissive = false;
+ 
+    for (unsigned int i = 0; i < textures.size(); i++)
+    {
+        const std::string& type = textures[i].type;
+        int unit = -1;
+ 
+        if (type == "diffuse" && material.useAlbedoMap)
+        {
+            unit = 0;
+            shader.setInt("texture_diffuse1", unit);
+            filledDiffuse = true;
+        }
+        else if (type == "normal" && material.useNormalMap && material.hasNormalMap)
+        {
+            unit = 5;
+            shader.setInt("texture_normal1", unit);
+            shader.setBool("hasNormalMap", true);
+        }
+        else if (type == "metallicRoughness"
+                 && material.useMetallicRoughnessMap
+                 && material.hasMetallicRoughnessMap)
+        {
+            unit = 6;
+            shader.setInt("texture_metallicRoughness1", unit);
+            shader.setBool("hasMetallicRoughnessMap", true);
+            filledMR = true;
+        }
+        else if (type == "ao" && material.useAOMap && material.hasAOMap)
+        {
+            unit = 7;
+            shader.setInt("texture_ao1", unit);
+            shader.setBool("hasAOMap", true);
+            filledAO = true;
+        }
+        else if (type == "emissive" && material.useEmissiveMap && material.hasEmissiveMap)
+        {
+            unit = 8;
+            shader.setInt("texture_emissive1", unit);
+            shader.setBool("hasEmissiveMap", true);
+            filledEmissive = true;
+        }
+        else
+        {
+            continue;
+        }
+ 
+        if (unit >= 0)
+        {
+            glActiveTexture(GL_TEXTURE0 + unit);
+            glBindTexture(GL_TEXTURE_2D, textures[i].id);
+        }
+    }
+ 
+
+
+
+    unsigned int white = GetDefaultWhiteTexture();
+ 
+    if (!filledDiffuse)
+    {
+        shader.setInt("texture_diffuse1", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, white);
+    }
+    if (!filledMR)
+    {
+        shader.setInt("texture_metallicRoughness1", 6);
+        glActiveTexture(GL_TEXTURE6);
+        glBindTexture(GL_TEXTURE_2D, white);
+    }
+    if (!filledAO)
+    {
+        shader.setInt("texture_ao1", 7);
+        glActiveTexture(GL_TEXTURE7);
+        glBindTexture(GL_TEXTURE_2D, white);
+    }
+    if (!filledEmissive)
+    {
+        shader.setInt("texture_emissive1", 8);
+        glActiveTexture(GL_TEXTURE8);
+        glBindTexture(GL_TEXTURE_2D, GetDefaultBlackTexture());
+    }
+}
+
+void Model::ExtractTangentBitangent(std::vector<vertex> &vertices, aiMesh *mesh)
+{
+
+    if (mesh->HasTangentsAndBitangents())
+    {
+        for (unsigned int i = 0; i < vertices.size(); i++)
+        {
+            vertices[i].tangent = glm::vec3(
+                mesh->mTangents[i].x,
+                mesh->mTangents[i].y,
+                mesh->mTangents[i].z
+            );
+            vertices[i].bitangent = glm::vec3(
+                mesh->mBitangents[i].x,
+                mesh->mBitangents[i].y,
+                mesh->mBitangents[i].z
+            );
+        }
+    }
+    else
+    {
+
+        for (unsigned int i = 0; i < vertices.size(); i += 3)
+        {
+            glm::vec3 edge1 = vertices[i+1].position - vertices[i].position;
+            glm::vec3 edge2 = vertices[i+2].position - vertices[i].position;
+            
+            glm::vec2 deltaUV1 = vertices[i+1].texCoords - vertices[i].texCoords;
+            glm::vec2 deltaUV2 = vertices[i+2].texCoords - vertices[i].texCoords;
+            
+            float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y + 0.0001f);
+            
+            glm::vec3 tangent(
+                f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x),
+                f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y),
+                f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z)
+            );
+            
+            for (unsigned int j = 0; j < 3; j++)
+            {
+                vertices[i+j].tangent = glm::normalize(tangent);
+                vertices[i+j].bitangent = 
+                    glm::normalize(glm::cross(vertices[i+j].normal, tangent));
+            }
+        }
+    }
+}
+
+Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
+{
+    std::vector<vertex> vertices;
+    std::vector<unsigned int> indices;
+    std::vector<texture> textures;
+
+
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+    {
+        vertex v;
+        v.position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+        v.normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+        
+        if (mesh->mTextureCoords[0])
+        {
+            v.texCoords = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+        }
+        
+        vertices.push_back(v);
+    }
+
+
+    ExtractTangentBitangent(vertices, mesh);
+
+
+    ExtractBoneWeights(vertices, mesh);
+
+
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+    {
+        aiFace face = mesh->mFaces[i];
+        for (unsigned int j = 0; j < face.mNumIndices; j++)
+            indices.push_back(face.mIndices[j]);
+    }
+
+
+    aiMaterial *mat = scene->mMaterials[mesh->mMaterialIndex];
+
+
+
+
+
+    aiColor4D baseColorFactor(1.f, 1.f, 1.f, 1.f);
+    if (mat->Get(AI_MATKEY_BASE_COLOR, baseColorFactor) != AI_SUCCESS)
+        mat->Get(AI_MATKEY_COLOR_DIFFUSE, baseColorFactor);
+
+
+    float metallicFactor  = 0.0f;
+    float roughnessFactor = 0.5f;      
+    mat->Get(AI_MATKEY_METALLIC_FACTOR,  metallicFactor);
+    mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor);   
+
+    std::vector<texture> diffuseMaps = loadMaterialTextures(mat, aiTextureType_BASE_COLOR, "diffuse");
+    if (diffuseMaps.empty())      
+        diffuseMaps = loadMaterialTextures(mat, aiTextureType_DIFFUSE, "diffuse");
+    
+    if (diffuseMaps.empty())      
+    {                      
+
+
+        unsigned char r = static_cast<unsigned char>(glm::clamp(baseColorFactor.r, 0.f, 1.f) * 255.f);
+        unsigned char g = static_cast<unsigned char>(glm::clamp(baseColorFactor.g, 0.f, 1.f) * 255.f);
+        unsigned char b = static_cast<unsigned char>(glm::clamp(baseColorFactor.b, 0.f, 1.f) * 255.f);
+        unsigned char a = static_cast<unsigned char>(glm::clamp(baseColorFactor.a, 0.f, 1.f) * 255.f);
+        unsigned char px[4] = {r, g, b, a};
+
+        unsigned int id;
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_2D, id);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        texture t;
+        t.id   = id;
+        t.type = "diffuse";
+        t.path = "__color_fallback__";
+        diffuseMaps.push_back(t);
+    }
+    textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+
+
+    std::set<std::string> diffusePaths;
+    for (auto& t : diffuseMaps) diffusePaths.insert(t.path);
+
+
+    std::vector<texture> normalMaps = loadMaterialTextures(mat, aiTextureType_NORMALS, "normal");
+    if (normalMaps.empty())
+        normalMaps = loadMaterialTextures(mat, aiTextureType_NORMAL_CAMERA, "normal");
+    textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+
+
+    std::vector<texture> mrMaps;
+    if (mat->GetTextureCount(aiTextureType_UNKNOWN) > 0)
+    {
+        aiString unknownPath;
+        mat->GetTexture(aiTextureType_UNKNOWN, 0, &unknownPath);
+        if (diffusePaths.find(unknownPath.C_Str()) == diffusePaths.end())
+            mrMaps = loadMaterialTextures(mat, aiTextureType_UNKNOWN, "metallicRoughness");
+    }
+    if (mrMaps.empty())
+        mrMaps = loadMaterialTextures(mat, aiTextureType_DIFFUSE_ROUGHNESS, "metallicRoughness");
+    if (mrMaps.empty())
+        mrMaps = loadMaterialTextures(mat, aiTextureType_METALNESS, "metallicRoughness");
+
+    if (mrMaps.empty())
+    {
+
+
+        unsigned char px[4] = {
+            0,
+            static_cast<unsigned char>(glm::clamp(roughnessFactor, 0.f, 1.f) * 255.f),
+            static_cast<unsigned char>(glm::clamp(metallicFactor,  0.f, 1.f) * 255.f),
+            255
+        };
+        unsigned int id;
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_2D, id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        texture t;
+        t.id   = id;
+        t.type = "metallicRoughness";
+        t.path = "__scalar_mr_fallback__";
+        mrMaps.push_back(t);
+    }
+    textures.insert(textures.end(), mrMaps.begin(), mrMaps.end());
+
+
+    std::vector<texture> aoMaps = loadMaterialTextures(mat, aiTextureType_AMBIENT_OCCLUSION, "ao");
+    if (aoMaps.empty())
+        aoMaps = loadMaterialTextures(mat, aiTextureType_LIGHTMAP, "ao");
+    if (aoMaps.empty())
+        aoMaps.push_back(MakeWhiteFallback("ao"));
+    textures.insert(textures.end(), aoMaps.begin(), aoMaps.end());
+
+
+
+aiColor3D emissiveFactor(0.f, 0.f, 0.f);
+mat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveFactor);
+
+
+float emissiveIntensity = 1.0f;
+mat->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveIntensity);
+
+std::vector<texture> emissiveMaps = loadMaterialTextures(mat, aiTextureType_EMISSIVE, "emissive");
+
+if (emissiveMaps.empty())
+{
+
+
+    unsigned char r = static_cast<unsigned char>(glm::clamp(emissiveFactor.r, 0.f, 1.f) * 255.f);
+    unsigned char g = static_cast<unsigned char>(glm::clamp(emissiveFactor.g, 0.f, 1.f) * 255.f);
+    unsigned char b = static_cast<unsigned char>(glm::clamp(emissiveFactor.b, 0.f, 1.f) * 255.f);
+    unsigned char px[4] = {r, g, b, 255};
+
+    unsigned int id;
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    texture t;
+    t.id   = id;
+    t.type = "emissive";
+    t.path = "__emissive_fallback__";
+    emissiveMaps.push_back(t);
+}
+textures.insert(textures.end(), emissiveMaps.begin(), emissiveMaps.end());
+
+
+    std::cout << "\n=== MATERIAL (" << mesh->mName.C_Str() << ") ===\n";
+    std::cout << "  baseColor=(" << baseColorFactor.r << "," << baseColorFactor.g << "," << baseColorFactor.b << ")"
+              << "  metallic=" << metallicFactor << "  roughness=" << roughnessFactor << "\n";
+    for (auto& t : textures)
+        std::cout << "  " << t.type << " -> " << t.path << "\n";
+
+
+
+ auto isRealTexture = [](const std::vector<texture>& maps) -> bool {
+        return !maps.empty() && maps[0].path.rfind("__", 0) != 0;
+    };
+ 
+    Mesh result_mesh(vertices, indices, textures);
+ 
+
+    result_mesh.material.name             = mesh->mName.C_Str();
+ 
+
+    result_mesh.material.metallic          = metallicFactor;
+    result_mesh.material.roughness         = roughnessFactor;
+ 
+
+
+    result_mesh.material.baseColor         = glm::vec3(1.0f);
+ 
+
+
+
+
+
+
+    if (isRealTexture(emissiveMaps))
+        result_mesh.material.emissive = glm::vec3(1.0f);
+    else
+        result_mesh.material.emissive = glm::vec3(
+            emissiveFactor.r, emissiveFactor.g, emissiveFactor.b);
+    result_mesh.material.emissiveIntensity = emissiveIntensity;
+ 
+
+    result_mesh.material.hasNormalMap            = isRealTexture(normalMaps);
+    result_mesh.material.hasMetallicRoughnessMap = isRealTexture(mrMaps);
+    result_mesh.material.hasAOMap                = isRealTexture(aoMaps);
+    result_mesh.material.hasEmissiveMap          = isRealTexture(emissiveMaps);
+ 
+
+    for (const auto& t : textures)
+    {
+        if      (t.type == "diffuse")           result_mesh.material.albedoTexID           = t.id;
+        else if (t.type == "normal")            result_mesh.material.normalTexID           = t.id;
+        else if (t.type == "metallicRoughness") result_mesh.material.metallicRoughnessTexID = t.id;
+        else if (t.type == "ao")                result_mesh.material.aoTexID               = t.id;
+        else if (t.type == "emissive")          result_mesh.material.emissiveTexID         = t.id;
+    }
+ 
+    return result_mesh;
+}
+
 std::vector<texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, const std::string &typeName) 
-{ 
+{   
+
+    
     std::vector<texture> textures; 
     for(unsigned int i = 0; i < mat->GetTextureCount(type); i++) 
     { 
@@ -801,11 +1143,18 @@ std::vector<texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
                 skip = true;  
                 break; 
             } 
+            std::cout
+    << "Loading "
+    << typeName
+    << " : "
+    << str.C_Str()
+    << std::endl;
         } 
         if(!skip) 
         {    
             texture texture; 
-            texture.id = TextureFromFile(str.C_Str(), directory, scene_ptr); 
+            bool isSRGB = (typeName == "diffuse");
+            texture.id = TextureFromFile(str.C_Str(), directory, scene_ptr, isSRGB); 
             texture.type = typeName; 
             texture.path = str.C_Str(); 
             textures.push_back(texture); 
@@ -907,7 +1256,7 @@ void ModelLoader::setModelAnimation(size_t modelIndex, unsigned int animationInd
         return; 
     } 
     data.animation = std::make_unique<Animation>(scene, data.model.get(), animationIndex); 
-    data.animator = std::make_unique<Animator>(); 
+    data.animator = std::make_unique<Animator>();   
     data.animator->PlayAnimation(data.animation.get()); 
 } 
 void ModelLoader::updateAnimations(float deltaTime) 

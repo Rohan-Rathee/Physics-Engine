@@ -22,7 +22,7 @@ private:
     bool mKeyPressed = false; 
      
     static InputSystem* instance; 
-     
+    static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
     static void mouseCallback(GLFWwindow* window, double xpos, double ypos); 
     static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset); 
     static void framebufferSizeCallback(GLFWwindow* window, int width, int height); 
@@ -34,5 +34,6 @@ public:
     void setRenderSystem(RenderSystem* rs) { renderSystem = rs; } 
     void processInput(); 
     void setDeltaTime(float dt) { deltaTime = dt; } 
+    bool isSpectatorMode() const { return spectatorMode; }
 }; 
 #endif 

@@ -11,10 +11,12 @@
 #include <memory> 
 #include "../core/time_manager.h" 
 class btDynamicsWorld; 
-  
+class LightManager;
+
+
 class RenderSystem { 
 private: 
-         
+
     unsigned int hdrTexture     = 0;     
     unsigned int envCubemap     = 0;     
     unsigned int irradianceMap  = 0;     
@@ -28,51 +30,89 @@ private:
     unsigned int brdfQuadVAO = 0; 
     unsigned int brdfQuadVBO = 0; 
   
-    bool hdriLoaded = false; 
+    bool  hdriLoaded   = false; 
     float hdriExposure = 1.0f;     
-  
-    std::unique_ptr<Shader> equirectShader;      
-    std::unique_ptr<Shader> irradianceShader;    
-    std::unique_ptr<Shader> prefilterShader;     
-    std::unique_ptr<Shader> brdfShader;          
-    std::unique_ptr<Shader> skyboxShader;        
+
+    std::unique_ptr<Shader> equirectShader;   
+    std::unique_ptr<Shader> irradianceShader; 
+    std::unique_ptr<Shader> prefilterShader;  
+    std::unique_ptr<Shader> brdfShader;       
+    std::unique_ptr<Shader> skyboxShader;     
   
     void setupHDRI(const std::string& hdrPath); 
     void renderSkybox(const glm::mat4& view, const glm::mat4& projection); 
-  
-      
     void renderCubeForCapture(); 
     void renderQuadForCapture(); 
-    unsigned int createCubemap(int size, GLenum internalFormat, 
-                               bool mipmap = false); 
-                                
-    std::unique_ptr<Shader> modelShader ; 
-    std::unique_ptr<Shader> lightingShader; 
+    unsigned int createCubemap(int size, GLenum internalFormat, bool mipmap = false); 
+
+
+
+
+
+
+
+    unsigned int hdrFBO          = 0;
+    unsigned int hdrColorBuffer  = 0;
+    unsigned int brightColorBuffer = 0;
+    unsigned int hdrRBO          = 0;
+
+    unsigned int pingpongFBO[2]    = {0, 0};
+    unsigned int pingpongBuffer[2] = {0, 0};
+
+
+    int   bloomIterations = 10;
+
+    std::unique_ptr<Shader> bloomBlurShader;
+    std::unique_ptr<Shader> compositeShader;
+
+    void setupBloomFBO();
+    void BloomPass();
+    void CompositePass();
+
+
+    std::unique_ptr<Shader>      modelShader; 
+    std::unique_ptr<Shader>      lightingShader; 
     std::unique_ptr<ModelLoader> modelLoader;    
-    ModelTransform* modelTransform;    
-    unsigned int instanceVBO; 
-    unsigned int VAO, VBO, lightVAO; 
-    unsigned int texture1, texture2; 
+    ModelTransform*              modelTransform = nullptr;    
+    unsigned int instanceVBO = 0; 
+    unsigned int VAO = 0, VBO = 0, lightVAO = 0; 
+    unsigned int texture1 = 0, texture2 = 0; 
     unsigned int screenWidth, screenHeight; 
-    std::string vertexPath, fragmentPath; 
-    std::string modelVertexPath, modelFragmentPath; 
+    std::string  vertexPath, fragmentPath; 
+    std::string  modelVertexPath, modelFragmentPath; 
     std::vector<glm::mat4> instanceMatrices; 
-    glm::vec4 frustumPlanes[6]; 
-    unsigned int shadowFBO, shadowDepthMap; 
-    static constexpr unsigned int SHADOW_WIDTH = 10240; 
+    glm::vec4    frustumPlanes[6]; 
+
+
+    unsigned int shadowFBO = 0, shadowDepthMap = 0; 
+    static constexpr unsigned int SHADOW_WIDTH  = 10240; 
     static constexpr unsigned int SHADOW_HEIGHT = 10240; 
     std::unique_ptr<Shader> shadowShader; 
     glm::mat4 lightProjection, lightView; 
     glm::vec3 lightPos; 
-    std::vector<glm::vec3> cubePositions; 
     glm::vec3 lightDir; 
-      
+
+
+    std::vector<glm::vec3> cubePositions; 
     void setupModels(); 
     void loadEnvironmentFolder(); 
     void setupShadowFramebuffer(); 
     void ShadowPass(float currentFrame, const glm::mat4 lightSpaceMatrix, const glm::vec3& cameraPos); 
     void RenderPass(const Camera& camera, const glm::mat4& view, const glm::mat4& projection, glm::mat4 lightSpaceMatrix, float currentFrame); 
+    float exposure      = 1.0f;
+    float bloomStrength = 0.04f;
+
+
 public: 
+    LightManager* m_lightManager = nullptr;
+    void setLightManager(LightManager* lm) { m_lightManager = lm; }
+void setExposure(float exp)           { exposure = glm::max(0.1f, exp); }
+void setBloomStrength(float str)      { bloomStrength = glm::max(0.0f, str); }
+void setHDRIExposure(float exp)       { hdriExposure = glm::max(0.1f, exp); }
+
+float getExposure() const             { return exposure; }
+float getBloomStrength() const        { return bloomStrength; }
+float getHDRIExposure() const         { return hdriExposure; }
     RenderSystem(const std::string& vertexPath, const std::string& fragmentPath,  
                  unsigned int width, unsigned int height); 
     ~RenderSystem(); 
@@ -82,8 +122,10 @@ public:
     void setScreenSize(unsigned int w, unsigned int h) { screenWidth = w; screenHeight = h; } 
     void extractFrustumPlanes(const glm::mat4& vp); 
     bool isInFrustum(const glm::vec3& pos); 
+
+
+    void resizeBloomBuffers(int width, int height);
      
-      
     void loadModel(const std::string& modelPath, const glm::vec3& position = glm::vec3(0.0f),  
                    const glm::vec3& scale = glm::vec3(1.0f)) { 
         modelLoader->loadModel(modelPath, position, scale); 
@@ -95,12 +137,12 @@ public:
             modelTransform->setTransform(modelIndex, position, scale, rotationAngle, rotationAxis); 
         } 
     } 
-     
       
     ModelLoader* getModelLoader() { return modelLoader.get(); } 
     void setModelTransformPtr(ModelTransform* mt) { modelTransform = mt; } 
     void setPhysicsWorldPtr(btDynamicsWorld* world) { physicsWorld = world; } 
     void setBulletDebugDrawEnabled(bool enabled) { bulletDebugDrawEnabled = enabled; } 
+
     std::unique_ptr<Shader> debugShader; 
     unsigned int quadVAO = 0; 
     unsigned int quadVBO = 0; 

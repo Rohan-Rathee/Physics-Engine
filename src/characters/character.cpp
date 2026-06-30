@@ -144,3 +144,31 @@ void Character::updateAnimationBlend()
     float runWeight = glm::clamp((speed - minSpeed) / (maxSpeed - minSpeed), 0.0f, 1.0f); 
     modelLoader->setBlendWeights(modelIndex, {runWeight, 1.0f - runWeight}); 
 } 
+
+void Character::takeDamage(float amount)
+{
+    if (isDead()) return;
+    health = glm::max(health - amount, 0.0f);
+}
+
+void Character::heal(float amount)
+{
+    health = glm::min(health + amount, maxHealth);
+}
+void Character::respawn(const glm::vec3& spawnPos)
+{
+    health = maxHealth;
+
+    if (!rigidBody) return;
+
+
+    btTransform t = rigidBody->getWorldTransform();
+    t.setOrigin(btVector3(spawnPos.x, spawnPos.y, spawnPos.z));
+    rigidBody->setWorldTransform(t);
+    rigidBody->setLinearVelocity(btVector3(0, 0, 0));
+    rigidBody->setAngularVelocity(btVector3(0, 0, 0));
+    rigidBody->activate(true);
+
+
+    rigidBody->forceActivationState(ACTIVE_TAG);
+}
