@@ -79,12 +79,13 @@ void main()
         if (totalWeight > 0.0001)
         prefilteredColor /= totalWeight;
     else
-        prefilteredColor = vec3(1.0, 0.0, 1.0);
+        prefilteredColor = vec3(1.0, 0.0, 1.0); 
+
     FragColor = vec4(prefilteredColor, 1.0); 
     if (any(isnan(prefilteredColor)))
     {
         FragColor = vec4(1,0,1,1);
         return;
     }
-    
+
 } 

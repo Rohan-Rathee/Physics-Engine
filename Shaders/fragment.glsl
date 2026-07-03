@@ -28,9 +28,6 @@ uniform float ao;
 uniform float metallic;
 uniform float roughness;
 
-
-
-
 float calculateShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -67,8 +64,6 @@ float calculateShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
     return shadow / 9.0;
 }
 
-
-
 void main()
 {
     vec4 diffuseColor = texture(texture_diffuse1, TexCoord);
@@ -89,10 +84,6 @@ void main()
     float NdotL = max(dot(N, L), 0.0);
     float NdotV = max(dot(N, V), 0.0);
     float NdotH = max(dot(N, H), 0.0);
-
-
-
-
 
     vec3 F0 = mix(vec3(0.04), albedo, m);
 
@@ -116,10 +107,6 @@ void main()
 
     vec3 Lo = diffuse + specular;
 
-
-
-
-
     vec3 ambient =
         vec3(50) *
         albedo *
@@ -129,10 +116,6 @@ void main()
     {
         ambient = vec3(100.0, 0.0, 0.0);
     }
-
-
-
-
 
     float shadow =
         calculateShadow(
@@ -144,10 +127,6 @@ void main()
     vec3 result =
         ambient +
         (1.0 - shadow) * Lo;
-
-
-
-
 
     float distanceToCamera =
         length(cameraPos - FragPos);
@@ -169,10 +148,6 @@ void main()
             result,
             fogFactor
         );
-
-
-
-
 
     result =
         pow(

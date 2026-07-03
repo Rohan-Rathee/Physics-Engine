@@ -7,9 +7,6 @@ class Character;
 
 enum class ChessPieceType { Pawn, Rook, Knight, Bishop, Queen, King };
 
-
-
-
 class ChessPieceController : public IController
 {
 public:
@@ -29,49 +26,45 @@ private:
     int                    m_patrolIdx = 0;
     float                  m_speed;
 
-
     enum class KnightPhase { MoveForward, MoveSide, Pause };
     KnightPhase  m_knightPhase    = KnightPhase::MoveForward;
-    float        m_knightProgress = 0.0f;
+    float        m_knightProgress = 0.0f; 
+
     glm::vec3    m_knightForward  = glm::vec3(0,0,1);
     glm::vec3    m_knightSide     = glm::vec3(1,0,0);
-    bool         m_knightSideDir  = true;
+    bool         m_knightSideDir  = true; 
 
+    enum class BishopPhase
+    {
+        Approach,
+        Dash
+    };
+
+    BishopPhase m_bishopPhase = BishopPhase::Approach;
+    glm::vec3 m_bishopDiag;
 
     enum class RookAxis { X, Z };
     RookAxis m_rookAxis = RookAxis::X;
 
-
-
-
+    enum class RookPhase { Approach, Dash };
+    RookPhase m_rookPhase = RookPhase::Approach;
 
     enum class DashPhase { Dashing, Pausing };
     DashPhase m_dashPhase    = DashPhase::Dashing;
-    float     m_dashProgress = 0.0f;
-    glm::vec3 m_dashDir      = glm::vec3(0,0,1);
+    float     m_dashProgress = 0.0f;           
 
-    static constexpr float kAxisChangePause = 1.0f;
+    glm::vec3 m_dashDir      = glm::vec3(0,0,1); 
 
-
-
-
+    float m_axisChangePause = 1.0f; 
 
     ControlInput dashStep(float dt, const glm::vec3& desiredDir,
                           float dashDistance, float speed);
 
+    float m_formationAngle = 0.0f; 
 
-
-
-
-
-
-    float m_formationAngle = 0.0f;
     static constexpr float kSurroundRadius = 3.5f;
 
-
-
     glm::vec3 surroundPoint() const;
-
 
     ControlInput pawnInput (float dt, const glm::vec3& pos);
     ControlInput rookInput (float dt, const glm::vec3& pos);
@@ -83,7 +76,6 @@ private:
     glm::vec3 currentWaypoint() const;
     bool      reachedWaypoint(const glm::vec3& pos, float radius = 1.2f) const;
     void      advanceWaypoint();
-
 
     static glm::vec3 snapToAxis(glm::vec3 dir, RookAxis axis);
 

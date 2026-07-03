@@ -16,9 +16,6 @@ int    frameCount = 0;
 
 Camera* g_camera = nullptr;
 
-
-
-
 Engine::Engine(unsigned int width, unsigned int height, const std::string& title)
     : screenWidth(width), screenHeight(height), running(true)
 {
@@ -36,9 +33,6 @@ Engine::~Engine()
 {
     shutdown();
 }
-
-
-
 
 bool Engine::initialize()
 {
@@ -87,7 +81,6 @@ bool Engine::initialize()
 
     renderSystem->setLightManager(lightManager.get());
 
-
     btRigidBody* playerBody = modelTransform->getPhysicsBody(0);
     if (playerBody)
     {
@@ -103,13 +96,12 @@ bool Engine::initialize()
                      "player character not spawned.\n";
     }
 
-
-
-
     spawnManager = std::make_unique<SpawnManager>(
         [this](const SpawnPoint& sp) -> std::shared_ptr<Character>
         {
+            
 
+            
 
             if (auto existing = sp.occupant.lock())
             {
@@ -117,23 +109,22 @@ bool Engine::initialize()
                 return existing;
             }
 
+            
 
-            return spawnBot(
-                "models\\untitled1.glb",
-                sp.position,
-                sp.patrolPoints,
-                sp.pieceType,
-                sp.respawnDelay);
+        return spawnBot(
+            modelForPiece(sp.pieceType),
+            sp.position,
+            sp.patrolPoints,
+            sp.pieceType,
+            sp.respawnDelay);
         });
 
-
-    const float pawnX[] = { -12.0f, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f,
-                            4.0f,   6.0f,   8.0f, 10.0f, 12.0f };
+    const float pawnX[] = { 0.0f};
     for (float px : pawnX)
     {
         spawnManager->addSpawnPoint({
             .position     = glm::vec3(px, 1.0f, 18.0f),
-            .pieceType    = ChessPieceType::Pawn,
+            .pieceType    = ChessPieceType::Queen,
             .team         = 1,
             .respawnDelay = 3.0f,
             .patrolPoints = {
@@ -141,15 +132,24 @@ bool Engine::initialize()
         });
     }
 
-
     spawnManager->spawnAll();
 
     return true;
+}     
+
+std::string Engine::modelForPiece(ChessPieceType t)
+{
+    switch (t)
+    {
+        case ChessPieceType::Pawn:   return "models\\untitled1.glb";
+        case ChessPieceType::Rook:   return "models\\untitled1.glb";
+        case ChessPieceType::Knight: return "models\\untitled1.glb";
+        case ChessPieceType::Bishop: return "models\\untitled1.glb";
+        case ChessPieceType::Queen:  return "models\\untitled1.glb";
+        case ChessPieceType::King:   return "models\\untitled1.glb";
+        default:                     return "models\\untitled1.glb";
+    }
 }
-
-
-
-
 
 std::shared_ptr<Character> Engine::spawnBot(
     const std::string&     modelPath,
@@ -179,13 +179,11 @@ std::shared_ptr<Character> Engine::spawnBot(
         return nullptr;
     }   
 
-
     auto ctrl = std::make_unique<ChessPieceController>(
         pieceType, std::move(patrolRoute), speedForPiece(pieceType));
   
     if (playerCharacter)
         ctrl->setTarget(playerCharacter.get());
-
 
     auto bot = std::make_shared<Character>(
         botIndex, botBody, modelLoader, physicsSystem.get(), std::move(ctrl));
@@ -195,13 +193,11 @@ std::shared_ptr<Character> Engine::spawnBot(
     return bot;
 }
 
-
-
-
 void Engine::run()
 {
     while (!windowSystem->shouldClose() && running)
     {
+        
 
         timeManager->update();
         float deltaTime   = timeManager->getDeltaTime();
@@ -216,11 +212,13 @@ void Engine::run()
             lastTime   = currentTime;
         }
 
+        
 
         auto t0 = std::chrono::high_resolution_clock::now();
         inputSystem->setDeltaTime(deltaTime);
         inputSystem->processInput();
 
+        
 
         auto t1 = std::chrono::high_resolution_clock::now();
         scene->updatePrePhysics(deltaTime);
@@ -230,25 +228,32 @@ void Engine::run()
         if (playerCharacter && !inputSystem->isSpectatorMode())
             cameraRig.update(*camera, *playerCharacter, deltaTime);
 
+        
 
         if (spawnManager)
         {
             spawnManager->update(deltaTime);
 
+            
 
+            
 
+            
 
             bots = spawnManager->getLivingCharacters();
         }
 
+        
 
         auto t2 = std::chrono::high_resolution_clock::now();
         renderSystem->getModelLoader()->updateAnimations(deltaTime);
 
+        
 
         auto t3 = std::chrono::high_resolution_clock::now();
         scene->update(deltaTime);
 
+        
 
         int windowWidth, windowHeight;
         glfwGetWindowSize(windowSystem->getGLFWWindow(), &windowWidth, &windowHeight);
@@ -261,18 +266,21 @@ void Engine::run()
             0.1f, 1000000.0f);
         glm::mat4 view = camera->GetViewMatrix();
 
+        
 
         imguiSystem->beginFrame();
         imguiSystem->renderPlayerHUD(playerCharacter.get());
         imguiSystem->renderBotHealthBars(bots, view, projection,
                                           screenWidth, screenHeight);
 
+        
 
         renderSystem->setScreenSize(screenWidth, screenHeight);
         renderSystem->render(*camera, currentTime, view, projection);
 
         auto t4 = std::chrono::high_resolution_clock::now();
 
+        
 
         float inputMs   = std::chrono::duration<float, std::milli>(t1 - t0).count();
         float physicsMs = std::chrono::duration<float, std::milli>(t2 - t1).count();
@@ -294,10 +302,12 @@ void Engine::run()
 
         imguiSystem->render();
 
+        
 
         windowSystem->swapBuffers();
         windowSystem->pollEvents();
 
+        
 
         static bool lastF1      = false;
         static bool cursorVisible = false;
@@ -313,14 +323,12 @@ void Engine::run()
     }
 }
 
-
-
-
 void Engine::shutdown()
 {
     playerCharacter.reset();
     bots.clear();
-    spawnManager.reset();
+    spawnManager.reset();      
+
     modelTransform.reset();
     scene.reset();
     renderSystem.reset();
@@ -332,18 +340,15 @@ void Engine::shutdown()
     imguiSystem.reset();
 }
 
-
-
-
 float Engine::speedForPiece(ChessPieceType t)
 {
     switch (t)
     {
         case ChessPieceType::Pawn:   return 10.0f;
-        case ChessPieceType::Rook:   return 10.0f;
+        case ChessPieceType::Rook:   return 3.0f;
         case ChessPieceType::Knight: return 10.0f;
-        case ChessPieceType::Bishop: return 10.5f;
-        case ChessPieceType::Queen:  return 10.5f;
+        case ChessPieceType::Bishop: return 3.5f;
+        case ChessPieceType::Queen:  return 3.5f;
         case ChessPieceType::King:   return 10.0f;
         default:                     return 10.0f;
     }

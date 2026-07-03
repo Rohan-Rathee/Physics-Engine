@@ -13,4 +13,4 @@ public:
 private: 
     InputSystem* inputSystem; 
     Camera* camera; 
-}; 
+};

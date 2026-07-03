@@ -1,5 +1,6 @@
 #version 330 core
-out vec4 FragColor;
+out vec4 FragColor;  
+
 in  vec2 TexCoords;
 const float PI = 3.14159265359;
 
@@ -61,7 +62,9 @@ vec2 IntegrateBRDF(float NdotV, float roughness)
         if (NdotL > 0.0)
         {
             float G     = GeometrySmith(NdotV, NdotL, roughness);
+            
 
+            
 
             float G_Vis = (G * VdotH) / max(NdotH * NdotV, 0.1 );
             float Fc    = pow(1.0 - VdotH, 5.0);

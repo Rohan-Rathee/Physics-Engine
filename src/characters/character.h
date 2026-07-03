@@ -36,8 +36,9 @@ public:
     glm::vec3 getUp() const; 
     bool isAirborne() const { return isInAir; } 
     IController* getController() const { return controller.get(); } 
-    
-    void    respawn(const glm::vec3& position);
+
+    void    respawn(const glm::vec3& position);  
+
 private: 
     float health    = 100.0f;
     float maxHealth = 100.0f;
@@ -50,9 +51,10 @@ private:
     btRigidBody* rigidBody; 
     ModelLoader* modelLoader; 
     PhysicsSystem* physicsSystem; 
-    std::unique_ptr<IController> controller; 
+    std::unique_ptr<IController> controller;
     bool isInAir = true; 
     bool blendInitialized = false; 
+
     unsigned int runAnimIndex; 
     unsigned int idleAnimIndex; 
     float moveSpeed = 12.0f; 
