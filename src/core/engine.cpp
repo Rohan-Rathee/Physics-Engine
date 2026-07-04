@@ -10,12 +10,9 @@
 #include <iostream>
 #include <chrono>
 #include <imgui.h>
-
 double lastTime  = glfwGetTime();
 int    frameCount = 0;
-
 Camera* g_camera = nullptr;
-
 Engine::Engine(unsigned int width, unsigned int height, const std::string& title)
     : screenWidth(width), screenHeight(height), running(true)
 {
@@ -28,12 +25,10 @@ Engine::Engine(unsigned int width, unsigned int height, const std::string& title
     scene         = std::make_unique<Scene>("MainScene");
     physicsSystem = std::make_unique<PhysicsSystem>();
 }
-
 Engine::~Engine()
 {
     shutdown();
 }
-
 bool Engine::initialize()
 {
     if (!windowSystem->initialize())
@@ -51,36 +46,28 @@ bool Engine::initialize()
         std::cerr << "Failed to initialize render system\n";
         return false;
     }
-
     modelTransform = std::make_unique<ModelTransform>(
         renderSystem->getModelLoader(), physicsSystem.get());
     renderSystem->setModelTransformPtr(modelTransform.get());
     renderSystem->setPhysicsWorldPtr(physicsSystem->getDynamicsWorld());
-
     if (!renderSystem->initializeModels())
     {
         std::cerr << "Failed to initialize models\n";
         return false;
     }
-
     lightManager = std::make_unique<LightManager>("lights.json");
     imguiSystem  = std::make_unique<ImGuiSystem>();
-
     if (!imguiSystem->initialize(windowSystem->getGLFWWindow()))
     {
         std::cerr << "Failed to initialize ImGui\n";
         return false;
     }
-
     imguiSystem->setLightManager(lightManager.get());
     imguiSystem->setModelLoader(renderSystem->getModelLoader());
-
     inputSystem = std::make_unique<InputSystem>(
         windowSystem->getGLFWWindow(), *camera, screenWidth, screenHeight);
     inputSystem->setRenderSystem(renderSystem.get());
-
     renderSystem->setLightManager(lightManager.get());
-
     btRigidBody* playerBody = modelTransform->getPhysicsBody(0);
     if (playerBody)
     {
@@ -95,22 +82,17 @@ bool Engine::initialize()
         std::cerr << "Engine::initialize: no rigid body at index 0 — "
                      "player character not spawned.\n";
     }
-
     spawnManager = std::make_unique<SpawnManager>(
         [this](const SpawnPoint& sp) -> std::shared_ptr<Character>
         {
             
-
             
-
             if (auto existing = sp.occupant.lock())
             {
                 existing->respawn(sp.position);
                 return existing;
             }
-
             
-
         return spawnBot(
             modelForPiece(sp.pieceType),
             sp.position,
@@ -118,7 +100,6 @@ bool Engine::initialize()
             sp.pieceType,
             sp.respawnDelay);
         });
-
     const float pawnX[] = { 0.0f};
     for (float px : pawnX)
     {
@@ -131,12 +112,9 @@ bool Engine::initialize()
                 glm::vec3(px, 0,  18), glm::vec3(px, 0, -18) }
         });
     }
-
     spawnManager->spawnAll();
-
     return true;
 }     
-
 std::string Engine::modelForPiece(ChessPieceType t)
 {
     switch (t)
@@ -150,7 +128,6 @@ std::string Engine::modelForPiece(ChessPieceType t)
         default:                     return "models\\untitled1.glb";
     }
 }
-
 std::shared_ptr<Character> Engine::spawnBot(
     const std::string&     modelPath,
     const glm::vec3&       spawnPosition,
@@ -162,12 +139,10 @@ std::shared_ptr<Character> Engine::spawnBot(
     modelLoader->loadModel(modelPath, spawnPosition, glm::vec3(1.0f));
     size_t botIndex = modelLoader->getModelCount() - 1;
     modelLoader->setModelAnimation(botIndex, 0);
-
     btCollisionShape* botShape =
         modelLoader->getModel(botIndex).model->buildCapsuleColliderFromMesh();
     glm::vec3 botScale = modelLoader->getModelScale(botIndex);
     botShape->setLocalScaling(btVector3(botScale.x, botScale.y, botScale.z));
-
     modelTransform->setTransform(
         botIndex, spawnPosition, glm::vec3(1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
     modelTransform->initializePhysicsBody(botIndex, 80.0f, botShape, 0.1f);
@@ -178,27 +153,22 @@ std::shared_ptr<Character> Engine::spawnBot(
         std::cerr << "Engine::spawnBot: no rigid body at index " << botIndex << "\n";
         return nullptr;
     }   
-
     auto ctrl = std::make_unique<ChessPieceController>(
         pieceType, std::move(patrolRoute), speedForPiece(pieceType));
   
     if (playerCharacter)
         ctrl->setTarget(playerCharacter.get());
-
     auto bot = std::make_shared<Character>(
         botIndex, botBody, modelLoader, physicsSystem.get(), std::move(ctrl));
-
     scene->addEntity(bot);
     bots.push_back(bot);
     return bot;
 }
-
 void Engine::run()
 {
     while (!windowSystem->shouldClose() && running)
     {
         
-
         timeManager->update();
         float deltaTime   = timeManager->getDeltaTime();
         float currentTime = timeManager->getCurrentTime();
@@ -211,83 +181,57 @@ void Engine::run()
             frameCount = 0;
             lastTime   = currentTime;
         }
-
         
-
         auto t0 = std::chrono::high_resolution_clock::now();
         inputSystem->setDeltaTime(deltaTime);
         inputSystem->processInput();
-
         
-
         auto t1 = std::chrono::high_resolution_clock::now();
         scene->updatePrePhysics(deltaTime);
         physicsSystem->update(deltaTime);
         scene->updatePostPhysics(deltaTime);
-
         if (playerCharacter && !inputSystem->isSpectatorMode())
             cameraRig.update(*camera, *playerCharacter, deltaTime);
-
         
-
         if (spawnManager)
         {
             spawnManager->update(deltaTime);
-
             
-
             
-
             
-
             bots = spawnManager->getLivingCharacters();
         }
-
         
-
         auto t2 = std::chrono::high_resolution_clock::now();
         renderSystem->getModelLoader()->updateAnimations(deltaTime);
-
         
-
         auto t3 = std::chrono::high_resolution_clock::now();
         scene->update(deltaTime);
-
         
-
         int windowWidth, windowHeight;
         glfwGetWindowSize(windowSystem->getGLFWWindow(), &windowWidth, &windowHeight);
         screenWidth  = static_cast<unsigned int>(windowWidth);
         screenHeight = static_cast<unsigned int>(windowHeight);
-
         glm::mat4 projection = glm::perspective(
             glm::radians(camera->Zoom),
             (float)screenWidth / (float)screenHeight,
             0.1f, 1000000.0f);
         glm::mat4 view = camera->GetViewMatrix();
-
         
-
         imguiSystem->beginFrame();
         imguiSystem->renderPlayerHUD(playerCharacter.get());
         imguiSystem->renderBotHealthBars(bots, view, projection,
                                           screenWidth, screenHeight);
-
         
-
         renderSystem->setScreenSize(screenWidth, screenHeight);
         renderSystem->render(*camera, currentTime, view, projection);
-
         auto t4 = std::chrono::high_resolution_clock::now();
-
         
-
         float inputMs   = std::chrono::duration<float, std::milli>(t1 - t0).count();
         float physicsMs = std::chrono::duration<float, std::milli>(t2 - t1).count();
         float animMs    = std::chrono::duration<float, std::milli>(t3 - t2).count();
         float renderMs  = std::chrono::duration<float, std::milli>(t4 - t3).count();
         float totalMs   = inputMs + physicsMs + animMs + renderMs;
-
         ImGui::Begin("Profiler");
         ImGui::Text("Bots alive: %zu / %zu",
                     bots.size(),
@@ -299,16 +243,11 @@ void Engine::run()
         ImGui::Text("Measured:   %.2f ms (%.0f fps)",
                     totalMs, totalMs > 0.0f ? 1000.0f / totalMs : 0.0f);
         ImGui::End();
-
         imguiSystem->render();
-
         
-
         windowSystem->swapBuffers();
         windowSystem->pollEvents();
-
         
-
         static bool lastF1      = false;
         static bool cursorVisible = false;
         bool f1 = glfwGetKey(windowSystem->getGLFWWindow(), GLFW_KEY_F1) == GLFW_PRESS;
@@ -322,13 +261,11 @@ void Engine::run()
         lastF1 = f1;
     }
 }
-
 void Engine::shutdown()
 {
     playerCharacter.reset();
     bots.clear();
     spawnManager.reset();      
-
     modelTransform.reset();
     scene.reset();
     renderSystem.reset();
@@ -339,7 +276,6 @@ void Engine::shutdown()
     physicsSystem.reset();
     imguiSystem.reset();
 }
-
 float Engine::speedForPiece(ChessPieceType t)
 {
     switch (t)

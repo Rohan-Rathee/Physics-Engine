@@ -11,5 +11,4 @@ void main()
       
     envColor = pow(envColor, vec3(1.0 / 2.2)); 
     FragColor = vec4(envColor, 1.0); 
-
 } 

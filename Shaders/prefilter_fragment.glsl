@@ -70,7 +70,6 @@ void main()
             float mipLevel = (roughness == 0.0)
                 ? 0.0
                 : 0.5 * log2(saSample / saTexel);
-
             mipLevel = clamp(mipLevel, 0.0, 4.0); 
             prefilteredColor += textureLod(environmentMap, L, mipLevel).rgb * NdotL; 
             totalWeight      += NdotL; 
@@ -80,12 +79,10 @@ void main()
         prefilteredColor /= totalWeight;
     else
         prefilteredColor = vec3(1.0, 0.0, 1.0); 
-
     FragColor = vec4(prefilteredColor, 1.0); 
     if (any(isnan(prefilteredColor)))
     {
         FragColor = vec4(1,0,1,1);
         return;
     }
-
 } 

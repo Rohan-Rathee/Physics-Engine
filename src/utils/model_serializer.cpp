@@ -1,101 +1,51 @@
 #include "model_serializer.h" 
-
 #include <iostream> 
-
 #include <assimp/Importer.hpp> 
-
 #include <assimp/scene.h> 
-
 #include <assimp/postprocess.h> 
-
   
-
 const uint32_t MODEL_MAGIC = 0x414E4944;   
-
 const uint32_t MODEL_VERSION = 1; 
-
 bool ModelSerializer::serializeToFile(const std::string& modelPath, const std::string& outputPath) { 
-
     try { 
 
-          
-
         Assimp::Importer importer; 
-
         const aiScene* scene = importer.ReadFile(modelPath, 
-
             aiProcess_Triangulate | 
-
             aiProcess_CalcTangentSpace | 
-
             aiProcess_GenNormals | 
-
             aiProcess_OptimizeMeshes 
-
         ); 
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) { 
-
             std::cerr << "Failed to load model: " << importer.GetErrorString() << std::endl; 
-
             return false; 
-
         } 
-
-          
 
         std::ofstream outFile(outputPath, std::ios::binary); 
-
         if (!outFile.is_open()) { 
-
             std::cerr << "Failed to open output file: " << outputPath << std::endl; 
-
             return false; 
-
         } 
-
-          
-
         outFile.write((const char*)&MODEL_MAGIC, sizeof(MODEL_MAGIC)); 
-
         outFile.write((const char*)&MODEL_VERSION, sizeof(MODEL_VERSION)); 
 
-          
-
         uint32_t numMeshes = scene->mNumMeshes; 
-
         outFile.write((const char*)&numMeshes, sizeof(numMeshes)); 
 
-          
-
         for (uint32_t i = 0; i < numMeshes; ++i) { 
-
             aiMesh* mesh = scene->mMeshes[i]; 
-
-              
-
             uint32_t numVertices = mesh->mNumVertices; 
-
             uint32_t numFaces = mesh->mNumFaces; 
-
             uint32_t numIndices = numFaces * 3;   
 
             outFile.write((const char*)&numVertices, sizeof(numVertices)); 
-
             outFile.write((const char*)&numIndices, sizeof(numIndices)); 
 
-              
-
-            for (uint32_t v = 0; v < numVertices; ++v) { 
-
-                  
-
+            for (uint32_t v = 0; v < numVertices; ++v) {
                 glm::vec3 pos(mesh->mVertices[v].x, mesh->mVertices[v].y, mesh->mVertices[v].z); 
-
                 outFile.write((const char*)&pos, sizeof(pos)); 
-
-                  
-
+                
                 glm::vec3 normal(0.0f); 
 
                 if (mesh->HasNormals()) { 

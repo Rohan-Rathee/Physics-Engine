@@ -2,7 +2,12 @@
  * @file shader.h
  * @brief Simple OpenGl shader class that handles loading, compiling, and linking vertex and fragment shaders as well as hot reloading.
  * 
- * LOG:
+ * File originaly made while engine architecture was not even segregated into systems and utils (right around hour 10 or so and not edited almost ever). It is now a utility class but still in the src folder. 
+ * basic idea inspired by OGLDev and learnopengl.com tutorials.
+ * 
+ * Hr 30 ish, I was trying to implement hot reloading of shaders. It works but it is not perfect. The shader class will check if the shader files have been modified and recompile them if they have. However, this will break the shaders in some cases.
+ * 
+ *
  * 
  * Allows hot reloading but since binaries are compiled at runtime, it break the shaders somewhat.
  * Bugs in this case are: 
@@ -16,6 +21,7 @@
  * DO NOT MODIFY
  * ------------------------
  * koi errors yaha nahi hai
+ * 
  */
 
 #ifndef SHADER_H

@@ -1,78 +1,68 @@
+/**
+ * @file input_system.h
+ * @brief Handles keyboard, mouse, and window input.
+ *
+ * Polls GLFW input, updates the camera, manages spectator mode,
+ * basically a hardware and software link.
+ *
+ * Also responsible for:
+ * - Mouse look.
+ * - Scroll wheel input.
+ * - Window resize callbacks.
+ * - Mouse button callbacks.
+ *
+ * ------------------------
+ * !!!NO GAME LOGIC, jump and fire are kinda already problematic, but they work so they stay ig.
+ * ------------------------
+ */
+
 #ifndef INPUT_SYSTEM_H 
-
 #define INPUT_SYSTEM_H 
-
 #include <glad/glad.h> 
-
 #include <GLFW/glfw3.h> 
-
 #include "../camera.h" 
-
 #include <glm/glm.hpp> 
 
 struct InputState { 
-
-    glm::vec2 moveAxis{0.0f}; 
-
-    bool jumpPressed = false; 
-
-    bool firePressed = false; 
-
+  glm::vec2 moveAxis{0.0f}; 
+  bool jumpPressed = false; 
+  bool firePressed = false; 
 }; 
 
-class RenderSystem;    
+class RenderSystem;  
 
 class InputSystem { 
 
 private: 
 
-    Camera& camera; 
+  Camera& camera; 
+  RenderSystem* renderSystem; 
+  GLFWwindow* window; 
+  float deltaTime; 
+  InputState currentInput; 
 
-    RenderSystem* renderSystem; 
+  bool spectatorMode = false; 
+  bool firstMouse; 
+  bool mKeyPressed = false; 
+   
+  static InputSystem* instance; 
 
-    GLFWwindow* window; 
-
-    float deltaTime; 
-
-    InputState currentInput; 
-
-    bool spectatorMode = false; 
-
-    bool firstMouse; 
-
-    bool mKeyPressed = false; 
-
-     
-
-    static InputSystem* instance; 
-
-    static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-
-    static void mouseCallback(GLFWwindow* window, double xpos, double ypos); 
-
-    static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset); 
-
-    static void framebufferSizeCallback(GLFWwindow* window, int width, int height); 
+  static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+  static void mouseCallback(GLFWwindow* window, double xpos, double ypos); 
+  static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset); 
+  static void framebufferSizeCallback(GLFWwindow* window, int width, int height); 
 
 public: 
 
-    InputState getInputState() const { return currentInput; } 
+  InputState getInputState() const { return currentInput; } 
+  float lastX, lastY; 
 
-    float lastX, lastY; 
-
-    InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight); 
-
-     
-
-    void setRenderSystem(RenderSystem* rs) { renderSystem = rs; } 
-
-    void processInput(); 
-
-    void setDeltaTime(float dt) { deltaTime = dt; } 
-
-    bool isSpectatorMode() const { return spectatorMode; }
-
+  InputSystem(GLFWwindow* w, Camera& cam, unsigned int screenWidth, unsigned int screenHeight); 
+   
+  void setRenderSystem(RenderSystem* rs) { renderSystem = rs; } 
+  void processInput(); 
+  void setDeltaTime(float dt) { deltaTime = dt; } 
+  bool isSpectatorMode() const { return spectatorMode; }
 }; 
 
 #endif 
-

@@ -1,9 +1,7 @@
 #version 330 core
 out vec4 FragColor;  
-
 in  vec2 TexCoords;
 const float PI = 3.14159265359;
-
 float RadicalInverse_VdC(uint bits)
 {
     bits = (bits << 16u) | (bits >> 16u);
@@ -13,12 +11,10 @@ float RadicalInverse_VdC(uint bits)
     bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
     return float(bits) * 2.3283064365386963e-10;
 }
-
 vec2 Hammersley(uint i, uint N)
 {
     return vec2(float(i) / float(N), RadicalInverse_VdC(i));
 }
-
 vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
 {
     float a = roughness * roughness;
@@ -31,19 +27,16 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
     vec3 bitan   = cross(N, tangent);
     return normalize(tangent * H.x + bitan * H.y + N * H.z);
 }
-
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
     float k = (roughness * roughness) / 2.0;
     return NdotV / (NdotV * (1.0 - k) + k);
 }
-
 float GeometrySmith(float NdotV, float NdotL, float roughness)
 {
     return GeometrySchlickGGX(NdotV, roughness)
          * GeometrySchlickGGX(NdotL, roughness);
 }
-
 vec2 IntegrateBRDF(float NdotV, float roughness)
 {
     vec3 V = vec3(sqrt(1.0 - NdotV * NdotV), 0.0, NdotV);
@@ -63,9 +56,7 @@ vec2 IntegrateBRDF(float NdotV, float roughness)
         {
             float G     = GeometrySmith(NdotV, NdotL, roughness);
             
-
             
-
             float G_Vis = (G * VdotH) / max(NdotH * NdotV, 0.1 );
             float Fc    = pow(1.0 - VdotH, 5.0);
             A += (1.0 - Fc) * G_Vis;
@@ -74,10 +65,8 @@ vec2 IntegrateBRDF(float NdotV, float roughness)
     }
     return vec2(A, B) / float(SAMPLE_COUNT);
 }
-
 void main()
 {
     vec2 lut = IntegrateBRDF(TexCoords.x, TexCoords.y);
-
     FragColor = vec4(lut, 0.0, 1.0);
 }
