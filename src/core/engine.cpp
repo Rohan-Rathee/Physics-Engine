@@ -10,9 +10,11 @@
 #include <iostream>
 #include <chrono>
 #include <imgui.h>
+
 double lastTime  = glfwGetTime();
 int    frameCount = 0;
 Camera* g_camera = nullptr;
+
 Engine::Engine(unsigned int width, unsigned int height, const std::string& title)
     : screenWidth(width), screenHeight(height), running(true)
 {
@@ -46,6 +48,18 @@ bool Engine::initialize()
         std::cerr << "Failed to initialize render system\n";
         return false;
     }
+    
+    {
+        int fbWidth = 0, fbHeight = 0;
+        glfwGetFramebufferSize(windowSystem->getGLFWWindow(), &fbWidth, &fbHeight);
+        if (fbWidth > 0 && fbHeight > 0)
+        {
+            screenWidth  = static_cast<unsigned int>(fbWidth);
+            screenHeight = static_cast<unsigned int>(fbHeight);
+            renderSystem->setScreenSize(screenWidth, screenHeight);
+            renderSystem->resizeBloomBuffers(fbWidth, fbHeight);
+        }
+    }
     modelTransform = std::make_unique<ModelTransform>(
         renderSystem->getModelLoader(), physicsSystem.get());
     renderSystem->setModelTransformPtr(modelTransform.get());
@@ -74,7 +88,7 @@ bool Engine::initialize()
         auto humanCtrl = std::make_unique<HumanController>(inputSystem.get(), camera.get());
         playerCharacter = std::make_shared<Character>(
             0, playerBody, renderSystem->getModelLoader(), physicsSystem.get(),
-            std::move(humanCtrl));
+            std::move(humanCtrl), 0, 1, 2, true);
         scene->addEntity(playerCharacter);
     }
     else
@@ -159,7 +173,7 @@ std::shared_ptr<Character> Engine::spawnBot(
     if (playerCharacter)
         ctrl->setTarget(playerCharacter.get());
     auto bot = std::make_shared<Character>(
-        botIndex, botBody, modelLoader, physicsSystem.get(), std::move(ctrl));
+        botIndex, botBody, modelLoader, physicsSystem.get(), std::move(ctrl), 0, 1, 2, false);
     scene->addEntity(bot);
     bots.push_back(bot);
     return bot;

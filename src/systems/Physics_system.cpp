@@ -34,7 +34,6 @@ void PhysicsSystem::update(float deltaTime) {
 
 void PhysicsSystem::shutdown() { 
     if (dynamicsWorld) { 
-
         for (int i = dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; --i) { 
             btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[i]; 
             btRigidBody* body = btRigidBody::upcast(obj); 

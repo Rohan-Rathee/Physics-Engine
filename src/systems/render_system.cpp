@@ -68,6 +68,10 @@ RenderSystem::~RenderSystem() {
     glDeleteRenderbuffers(1, &hdrRBO);
     glDeleteFramebuffers(2, pingpongFBO);
     glDeleteTextures(2, pingpongBuffer);
+    if (crosshairVAO)
+        glDeleteVertexArrays(1, &crosshairVAO);
+    if (crosshairVBO)
+        glDeleteBuffers(1, &crosshairVBO);
 
     if (skyboxVAO)
         glDeleteVertexArrays(1, &skyboxVAO);
@@ -312,6 +316,7 @@ bool RenderSystem::initialize() {
                                            modelFragmentPath.c_str());
     setupShadowFramebuffer();
     setupDebugQuad();
+    setupCrosshair();
     bulletDebugDrawer->initBuffers();
     debugLineShader = std::make_unique<Shader>("Shaders/debug_line_vertex.glsl",
                                                "Shaders/debug_line_fragment.glsl");
@@ -507,6 +512,66 @@ void RenderSystem::setupHDRI(const std::string &hdrPath) {
     glViewport(0, 0, (GLsizei)screenWidth, (GLsizei)screenHeight);
     hdriLoaded = true;
     std::cout << "[HDRI] IBL precomputation complete." << std::endl;
+}
+
+void RenderSystem::setupCrosshair() {
+    crosshairShader = std::make_unique<Shader>("Shaders/crosshair_vertex.glsl",
+                                               "Shaders/crosshair_fragment.glsl");
+
+    const float g = crosshairGap;
+    const float l = crosshairSize;
+
+    // Four short line segments (up/down/left/right) with a gap around dead
+    // center — classic FPS crosshair. Coordinates are in a "logical square"
+    // space; the vertex shader corrects for aspect ratio so all four arms
+    // read as equal pixel length regardless of window shape.
+    const float verts[] = {
+        // vertical - top arm
+        0.0f,  g,
+        0.0f,  g + l,
+        // vertical - bottom arm
+        0.0f, -g,
+        0.0f, -(g + l),
+        // horizontal - right arm
+         g, 0.0f,
+         g + l, 0.0f,
+        // horizontal - left arm
+        -g, 0.0f,
+        -(g + l), 0.0f,
+    };
+
+    glGenVertexArrays(1, &crosshairVAO);
+    glGenBuffers(1, &crosshairVBO);
+    glBindVertexArray(crosshairVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, crosshairVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
+    glBindVertexArray(0);
+}
+
+void RenderSystem::renderCrosshair() {
+    if (!crosshairEnabled || !crosshairShader || !crosshairVAO)
+        return;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, (GLsizei)screenWidth, (GLsizei)screenHeight);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+
+    crosshairShader->use();
+    crosshairShader->setFloat("uAspectCorrection",
+        screenWidth > 0 ? (float)screenHeight / (float)screenWidth : 1.0f);
+    crosshairShader->setVec3("uColor", crosshairColor);
+
+    glLineWidth(crosshairThickness);
+    glBindVertexArray(crosshairVAO);
+    glDrawArrays(GL_LINES, 0, 8);
+    glBindVertexArray(0);
+    glLineWidth(1.0f);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 }
 
 void RenderSystem::setupDebugQuad() {
@@ -707,6 +772,7 @@ void RenderSystem::render(const Camera &camera, float currentFrame,
     RenderPass(camera, view, projection, lightProjection * lightView, currentFrame);
     BloomPass();
     CompositePass();
+    renderCrosshair();
 }
 void RenderSystem::resizeBloomBuffers(int width, int height) {
     screenWidth = width;
@@ -734,4 +800,4 @@ void RenderSystem::resizeBloomBuffers(int width, int height) {
     
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
-}
+}  

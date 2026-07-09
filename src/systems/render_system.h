@@ -36,6 +36,7 @@ class btDynamicsWorld;
 class LightManager;
 class RenderSystem {
 private:
+
     unsigned int hdrTexture = 0;
     unsigned int envCubemap = 0;
     unsigned int irradianceMap = 0;
@@ -141,5 +142,16 @@ public:
     bool bulletDebugDrawEnabled = false;
     void setupDebugQuad();
     void renderShadowMapDebug();
+    void setupCrosshair();
+    void renderCrosshair();
+
+    std::unique_ptr<Shader> crosshairShader;
+    unsigned int crosshairVAO = 0, crosshairVBO = 0;
+
+    bool  crosshairEnabled   = true;
+    glm::vec3 crosshairColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    float crosshairSize      = 0.02f; 
+    float crosshairGap       = 0.01f; 
+    float crosshairThickness = 2.0f;  
 };
 #endif

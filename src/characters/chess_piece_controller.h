@@ -1,4 +1,17 @@
-#pragma once
+/**
+ * @file chess_piece_controller.h
+ * @brief Defines the ChessPieceController class for controlling chess-like pieces in the game world.
+ * has the logic of where i want the engine demo game to go towards, kinda like a musics beat based (unimplemented) PVE where you use timing to do crit or smth to the boring no musics chess pieces, 
+ * but with their own characteristincs damnn my font makes big words a (\w{4}\s?) chore *characteristics (ahh only n messed me up)
+ *                                                                         ^ regex
+ * anyways
+ * theyu have their own movement patterns and stuff, like the pawns try to surround you by aiming towards a point in a  circle around you, and knight gets very close and then retreats/dashes sideways, rook and bishop take small steps and dash on axis alignment, and qween gets to do anything
+ * will make dashers like big tanks, with chargeup, and king be like a few stories tall when i complete the models
+ * bit roguelike and bit like rhythm inspired by beatsperminute BPM, and robobeat.
+ * viewer please remember this is a game engine, not a game, and the chess pieces are just a demo of the engine's capabilities, not a game in itself. 
+ * it is in no way a demo of my game design skills, which are .... not good, for the lack of words, and i am not a game designer, just a programmer who likes to make things move around in 3d space and look pretty.
+ */
+ #pragma once
 #include "controller.h"
 #include <glm/glm.hpp>
 #include <vector>

@@ -3,19 +3,13 @@
 #include <glm/glm.hpp> 
 #include <vector> 
   
-  
-  
-  
-  
+
 class AIController : public IController 
 { 
 public: 
     explicit AIController(std::vector<glm::vec3> patrolPoints = {}); 
     ControlInput getInput(float deltaTime, const glm::vec3& currentPosition) override; 
-      
-      
-      
-      
+
     void setTarget(const glm::vec3* targetPosition) { target = targetPosition; } 
 private: 
     ControlInput patrol(const glm::vec3& currentPosition); 
