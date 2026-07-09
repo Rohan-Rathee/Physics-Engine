@@ -26,8 +26,7 @@
  */
 
 
- #ifndef ENGINE_H 
-#define ENGINE_H 
+#pragma once
 
 #include "time_manager.h" 
 #include "../systems/window_system.h" 
@@ -101,4 +100,3 @@ public:
 
     PhysicsSystem* getPhysicsSystem() { return physicsSystem.get(); } 
 }; 
-#endif

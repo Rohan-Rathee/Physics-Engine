@@ -1,6 +1,4 @@
-#ifndef TRANSFORM_H 
-#define TRANSFORM_H 
-
+#pragma once
 #include <glm/glm.hpp> 
 #include <glm/gtc/matrix_transform.hpp> 
 
@@ -26,4 +24,4 @@ public:
     glm::vec3 getRotation() const { return rotation; } 
     glm::vec3 getScale() const { return scale; } 
 }; 
-#endif 
+

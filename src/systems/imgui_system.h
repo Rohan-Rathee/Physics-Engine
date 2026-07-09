@@ -16,9 +16,7 @@
  * ------------------------
  */
 
-#ifndef IMGUI_SYSTEM_H
-#define IMGUI_SYSTEM_H
-
+#pragma once
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -65,4 +63,4 @@ private:
     int  m_selectedMesh  = -1;
 };
 
-#endif 
+

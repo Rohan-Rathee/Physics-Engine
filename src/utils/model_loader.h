@@ -18,8 +18,7 @@
  * ------------------------
  */
 
-#ifndef MODEL_LOADER_H
-#define MODEL_LOADER_H
+#pragma once
 #include "../animation/animation.h"
 #include "../animation/animator.h"
 #include "../animation/bone.h"
@@ -212,4 +211,3 @@ private:
 
     friend class RenderSystem;
 };
-#endif

@@ -17,9 +17,7 @@
  * ------------------------
  */
 
- #ifndef MODEL_TRANSFORM_H
-#define MODEL_TRANSFORM_H
-
+ #pragma once
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
 #include <memory>
@@ -60,4 +58,3 @@ private:
     void applyPhysicsTransform(const PhysicsModelData &physicsModel);
 };
 
-#endif

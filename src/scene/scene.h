@@ -4,8 +4,7 @@
  *
  * is simple and plan to keep is simple
  */
- #ifndef SCENE_H 
-#define SCENE_H 
+#pragma once
 #include "entity.h" 
 #include <vector> 
 #include <memory> 
@@ -30,4 +29,4 @@ public:
      
     std::string getName() const { return name; } 
 }; 
-#endif 
+

@@ -5,8 +5,7 @@
  * a joint between the game engine and the Bullet Physics library. kinda a wrapper around the lib to make it talk to model transform a bit better.
  * 
  */
-#ifndef PHYSICS_SYSTEM_H 
-#define PHYSICS_SYSTEM_H 
+#pragma once 
 #include <memory> 
 #include <btBulletDynamicsCommon.h> 
 #include <BulletDynamics/Dynamics/btRigidBody.h> 
@@ -44,4 +43,3 @@ public:
     glm::vec3 getGravity() const { return gravity; } 
     void setGravity(const glm::vec3& g); 
 }; 
-#endif

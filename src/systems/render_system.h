@@ -20,8 +20,7 @@
  * This is one of the biggest files in the engine. i admit it handles too much, even imports the models and owns the physics body 
  * ------------------------
  */
-#ifndef RENDER_SYSTEM_H
-#define RENDER_SYSTEM_H
+#pragma once
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include "../camera.h"
@@ -154,4 +153,3 @@ public:
     float crosshairGap       = 0.01f; 
     float crosshairThickness = 2.0f;  
 };
-#endif

@@ -19,8 +19,7 @@
  * 
  */
 
-#ifndef LIGHT_MANAGER_H
-#define LIGHT_MANAGER_H
+#pragma once
 #include <array>
 #include <glm/glm.hpp>
 #include <string>
@@ -83,4 +82,3 @@ private:
     std::string m_jsonPath;
 };
 
-#endif

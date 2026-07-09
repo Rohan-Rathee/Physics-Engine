@@ -373,7 +373,7 @@ void RenderSystem::setupHDRI(const std::string &hdrPath) {
     glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
     equirectShader = std::make_unique<Shader>("Shaders/cubemap_capture_vertex.glsl",
                                               "Shaders/equirect_to_cubemap_fragment.glsl");
-    int ENV_SIZE = 512;
+    int ENV_SIZE = 1024;
     envCubemap = createCubemap(ENV_SIZE, GL_RGB16F, true);
     glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, ENV_SIZE, ENV_SIZE);
@@ -393,28 +393,6 @@ void RenderSystem::setupHDRI(const std::string &hdrPath) {
                                GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, envCubemap, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         renderCubeForCapture();
-    }
-
-    ENV_SIZE = 512;
-
-    envCubemap = createCubemap(ENV_SIZE, GL_RGB16F, true);
-
-// Fill every face with black
-    std::vector<glm::vec3> blackPixels(ENV_SIZE * ENV_SIZE, glm::vec3(0.0f));
-
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-
-    for (int face = 0; face < 6; ++face) {
-        glTexImage2D(
-            GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-            0,
-            GL_RGB16F,
-            ENV_SIZE,
-            ENV_SIZE,
-            0,
-            GL_RGB,
-            GL_FLOAT,
-            blackPixels.data());
     }
 
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
@@ -447,8 +425,8 @@ void RenderSystem::setupHDRI(const std::string &hdrPath) {
     prefilterShader = std::make_unique<Shader>("Shaders/cubemap_capture_vertex.glsl",
                                                "Shaders/prefilter_fragment.glsl");
 
-    const int PF_SIZE = 128;
-    const int MAX_MIP = 5;
+    const int PF_SIZE = 256;
+    const int MAX_MIP = 7;
 
     prefilterMap = createCubemap(PF_SIZE, GL_RGB16F, true);
     prefilterShader->use();
@@ -714,7 +692,7 @@ void RenderSystem::RenderPass(const Camera &camera,
         } else {
             modelShader->setInt("u_numLights", 0);
         }
-        const float CULL_DISTANCE = 90.0f;
+        const float CULL_DISTANCE = 900.0f;
         for (size_t i = 0; i < modelLoader->models.size(); i++) {
             auto &modelData = modelLoader->models[i];
             glm::vec3 wbc = glm::vec3(

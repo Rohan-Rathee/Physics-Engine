@@ -16,8 +16,7 @@
  * ------------------------
  */
 
-#ifndef INPUT_SYSTEM_H 
-#define INPUT_SYSTEM_H 
+#pragma once
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h> 
 #include "../camera.h" 
@@ -65,4 +64,4 @@ public:
   bool isSpectatorMode() const { return spectatorMode; }
 }; 
 
-#endif 
+

@@ -12,10 +12,7 @@
  * Rendering, input, and other engine systems should stay separate.
  * ------------------------
  */
-
-#ifndef WINDOW_SYSTEM_H 
-#define WINDOW_SYSTEM_H 
-
+#pragma once
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h> 
 #include <string> 
@@ -45,5 +42,5 @@ public:
 
 }; 
 
-#endif 
+
 

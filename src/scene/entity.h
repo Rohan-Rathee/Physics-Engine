@@ -1,8 +1,8 @@
-#ifndef ENTITY_H 
-#define ENTITY_H 
+#pragma once
 #include "../components/transform.h" 
 #include <memory> 
 #include <string> 
+
 class Entity { 
 protected: 
     std::string name; 
@@ -27,4 +27,4 @@ public:
     virtual void update(float deltaTime) {} 
     virtual void render() {} 
 }; 
-#endif 
+

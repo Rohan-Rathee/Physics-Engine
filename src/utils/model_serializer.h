@@ -1,5 +1,4 @@
-#ifndef MODEL_SERIALIZER_H 
-#define MODEL_SERIALIZER_H 
+#pragma once
 #include <vector> 
 #include <string> 
 #include <fstream> 
@@ -21,5 +20,5 @@ private:
     static Mesh readMesh(std::istream& stream); 
 }; 
 
-#endif 
+
 

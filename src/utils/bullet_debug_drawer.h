@@ -6,9 +6,7 @@
  * engine's rendering pipeline.
  */
 
-#ifndef BULLET_DEBUG_DRAWER_H 
-#define BULLET_DEBUG_DRAWER_H 
-
+#pragma once
 #include <btBulletDynamicsCommon.h> 
 #include <glm/glm.hpp> 
 
@@ -45,5 +43,5 @@ private:
 
 }; 
 
-#endif 
+
 

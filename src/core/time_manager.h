@@ -1,9 +1,7 @@
 /**
  * self explanatory
  */
-
-#ifndef TIME_MANAGER_H 
-#define TIME_MANAGER_H 
+#pragma once
 class TimeManager { 
 private: 
     float deltaTime; 
@@ -17,5 +15,5 @@ public:
     float getFPS() const; 
 };
 
-#endif    
+   
 

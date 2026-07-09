@@ -1,5 +1,4 @@
-#ifndef ASSIMP_GLM_HELPERS_H 
-#define ASSIMP_GLM_HELPERS_H 
+#pragma once
 #include <glm/glm.hpp> 
 #include <glm/gtc/quaternion.hpp> 
 #include <assimp/scene.h> 
@@ -24,4 +23,4 @@ namespace AssimpGLMHelpers
         return glm::quat(q.w, q.x, q.y, q.z); 
     } 
 } 
-#endif   
+  
