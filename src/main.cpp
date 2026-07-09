@@ -14,26 +14,17 @@
  */
 
 
- #include <iostream>
-
 #include "core/engine.h"
+#include "Game/game1.h"
 
-int main() {
-    try {
-        Engine engine(1920, 1080, "Physics Engine");
+int main()
+{
+    Engine engine(1280, 720, "My Engine");
+    ChessArenaGame game;
 
-        if (!engine.initialize()) {
-            std::cerr << "Failed to initialize engine" << std::endl;
-            return -1;
-        }
-
-        engine.run();
-        engine.shutdown();
-
-        return 0;
-
-    } catch (const std::exception &e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+    if (!engine.initialize(&game))
         return -1;
-    }
+
+    engine.run();
+    return 0;
 }

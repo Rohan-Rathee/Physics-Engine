@@ -25,78 +25,60 @@
  * @date 2026
  */
 
-
 #pragma once
+#include <memory>
+#include <string>
+#include "..\systems\window_system.h"
+#include "..\core\time_manager.h"
+#include "..\camera.h"
+#include "..\systems\render_system.h"
+#include "..\scene\scene.h"
+#include "..\systems\physics_system.h"
+#include "..\utils\model_transform.h"
+#include "..\utils\light_manager.h"
+#include "..\systems\imgui_system.h"
+#include "..\systems\input_system.h"
+#include "..\systems\camera_follow.h"
+#include "..\game\game.h"
 
-#include "time_manager.h" 
-#include "../systems/window_system.h" 
-#include "../systems/render_system.h" 
-#include "../systems/input_system.h" 
-#include "../systems/physics_system.h" 
-#include "../utils/model_transform.h" 
-#include "../scene/scene.h" 
+class CameraFollow{};
+class Engine
+{
+public:
+    Engine(unsigned int width, unsigned int height, const std::string& title);
+    ~Engine();
 
-#include "../camera.h" 
-#include "../systems/camera_follow.h" 
+    bool initialize(IGame* game);   
+    void run();
+    void shutdown();
+    
+    RenderSystem*   getRenderSystem()   const { return renderSystem.get(); }
+    ModelLoader*    getModelLoader()    const { return renderSystem->getModelLoader(); }
+    ModelTransform* getModelTransform() const { return modelTransform.get(); }
+    PhysicsSystem*  getPhysicsSystem()  const { return physicsSystem.get(); }
+    Scene*          getScene()          const { return scene.get(); }
+    Camera*         getCamera()         const { return camera.get(); }
+    InputSystem*    getInputSystem()    const { return inputSystem.get(); }
+    ImGuiSystem*    getImGuiSystem()    const { return imguiSystem.get(); }
+    LightManager*   getLightManager()   const { return lightManager.get(); }
+    unsigned int    getScreenWidth()    const { return screenWidth; }
+    unsigned int    getScreenHeight()   const { return screenHeight; }
 
-#include <glm/glm.hpp> 
-#include <glm/gtc/matrix_transform.hpp> 
+private:
+    unsigned int screenWidth, screenHeight;
+    bool running;
 
-#include <memory> 
-#include <vector> 
-
-#include "../systems/imgui_system.h" 
-#include "../utils/light_manager.h"
-#include "../characters/spawner.h"
-#include "../characters/chess_piece_controller.h"
-
-class Character; 
-extern Camera* g_camera; 
-class Engine { 
-private: 
-
-    std::unique_ptr<SpawnManager> spawnManager;
-    std::unique_ptr<WindowSystem> windowSystem; 
-    std::unique_ptr<LightManager> lightManager;
-    std::unique_ptr<ImGuiSystem> imguiSystem; 
-    std::unique_ptr<RenderSystem> renderSystem; 
-    std::unique_ptr<InputSystem> inputSystem; 
-    std::unique_ptr<TimeManager> timeManager; 
-    std::unique_ptr<Scene> scene; 
-    std::unique_ptr<Camera> camera; 
-    std::unique_ptr<PhysicsSystem> physicsSystem; 
-    std::unique_ptr<ModelTransform> modelTransform; 
-    std::shared_ptr<Character> playerCharacter; 
-    std::vector<std::shared_ptr<Character>> bots; 
+    std::unique_ptr<WindowSystem>  windowSystem;
+    std::unique_ptr<TimeManager>   timeManager;
+    std::unique_ptr<Camera>        camera;
+    std::unique_ptr<RenderSystem>  renderSystem;
+    std::unique_ptr<Scene>         scene;
+    std::unique_ptr<PhysicsSystem> physicsSystem;
+    std::unique_ptr<ModelTransform> modelTransform;
+    std::unique_ptr<LightManager>  lightManager;
+    std::unique_ptr<ImGuiSystem>   imguiSystem;
+    std::unique_ptr<InputSystem>   inputSystem;
     ThirdPersonCameraRig cameraRig;
 
-    unsigned int screenWidth; 
-    unsigned int screenHeight; 
-
-    bool running; 
-
-    float       speedForPiece(ChessPieceType t);
-    std::string modelForPiece(ChessPieceType t);
-
-public: 
-
-    Engine(unsigned int width, unsigned int height, const std::string& title); 
-    ~Engine(); 
-
-    bool initialize(); 
-    void run(); 
-    void shutdown(); 
-
-    std::shared_ptr<Character> spawnBot(
-    const std::string&     modelPath,
-    const glm::vec3&       spawnPosition,
-    std::vector<glm::vec3> patrolRoute,
-    ChessPieceType         pieceType    = ChessPieceType::Pawn,
-    float                  respawnDelay = 5.0f);
-
-
-    Scene* getScene() { return scene.get(); } 
-    Camera* getCamera() { return camera.get(); } 
-
-    PhysicsSystem* getPhysicsSystem() { return physicsSystem.get(); } 
-}; 
+    IGame* game = nullptr; 
+};

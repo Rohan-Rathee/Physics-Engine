@@ -245,33 +245,7 @@ void RenderSystem::CompositePass() {
 
 
 void RenderSystem::setupModels() {
-    btCollisionShape *basketballShape = nullptr;
 
-    for (int i = 0; i < 1; ++i) {
-
-        for (int j = 0; j < 1; ++j) {
-
-            loadModel("models\\p1.glb", glm::vec3(0.0f), glm::vec3(1.0f));
-            int currentIndex = (int)modelLoader->models.size() - 1;
-            modelLoader->setModelAnimation(currentIndex, 0);
-            if (basketballShape == nullptr && modelTransform) {
-                Model *m = modelLoader->models[currentIndex].model.get();
-                basketballShape = m->buildCapsuleColliderFromMesh();
-                glm::vec3 scale = modelLoader->getModelScale(currentIndex);
-                basketballShape->setLocalScaling(btVector3(scale.x, scale.y, scale.z));
-            }
-            setModelTransform(currentIndex, glm::vec3(0.0f, 10.0f, 0.0f),
-                              glm::vec3(1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-            if (modelTransform && basketballShape)
-                modelTransform->initializePhysicsBody(currentIndex, 80.0f,
-                                                      basketballShape, 0.1f);
-        }
-    }
-
-    loadModel("models\\parts1.glb", glm::vec3(0.0f), glm::vec3(1.0f));
-    modelTransform->initializePhysicsBody(
-        modelLoader->models.size() - 1, 0.0f,
-        modelLoader->models.back().model->buildCompoundBoxCollider(), 0.2f);
 }
 
 

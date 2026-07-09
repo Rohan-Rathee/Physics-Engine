@@ -41,6 +41,7 @@ add_executable(main
     src/utils/light_manager.cpp
     src/characters/chess_piece_controller.cpp
     src/characters/spawner.cpp
+    src/game/game1.cpp
 ) 
 # Link libraries 
 target_link_libraries(main PRIVATE  
