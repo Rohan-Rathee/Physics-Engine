@@ -114,7 +114,7 @@ void Engine::run()
         glm::mat4 view = camera->GetViewMatrix();
 
         imguiSystem->beginFrame();
-        if (game) game->onRenderUI(); // player HUD, bot health bars, "bots alive" — all game-owned now
+        if (game) game->onRenderUI();
 
         renderSystem->setScreenSize(screenWidth, screenHeight);
         renderSystem->render(*camera, currentTime, view, projection);
@@ -126,7 +126,7 @@ void Engine::run()
         float renderMs  = std::chrono::duration<float, std::milli>(t4 - t3).count();
         float totalMs   = inputMs + physicsMs + animMs + renderMs;
 
-        ImGui::Begin("Engine Profiler"); // purely engine-level now, no gameplay counters
+        ImGui::Begin("Engine Profiler"); 
         ImGui::Text("Input:      %.2f ms", inputMs);
         ImGui::Text("Physics:    %.2f ms", physicsMs);
         ImGui::Text("Animation:  %.2f ms", animMs);

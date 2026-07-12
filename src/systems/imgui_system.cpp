@@ -459,6 +459,12 @@ void ImGuiSystem::renderMaterialEditor(PBRMaterial &mat, const char *meshNodeNam
     }
 }
 
+void ImGuiSystem::onLevelChanged() {
+    m_selectedModel = -1;
+    m_selectedMesh  = -1;
+    m_selectedLight = -1;
+}
+
 void ImGuiSystem::render() {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

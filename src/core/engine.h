@@ -21,6 +21,9 @@
  * 
  * then basic shutdown. plain and simple
  * 
+ * EDIT : as of 10 july, engine has be refactored to only have engine stuff, with game logic gone to the game folder, now this engine can be for any project, not just chess arena, and the game folder can be used to implement any game logic on top of this engine, while still allowing use feature implementation using only 2 or 3 files.
+ * 
+ * 
  * @author Rohan Rathee
  * @date 2026
  */

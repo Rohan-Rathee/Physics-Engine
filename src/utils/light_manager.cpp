@@ -311,3 +311,19 @@ void LightManager::uploadToShader(Shader &shader) const {
     }
     shader.setInt("u_numLights", n);
 }
+
+void LightManager::loadFromFile(const std::string &jsonPath) {
+    m_jsonPath = jsonPath;
+    load();
+
+    if (lights.empty()) {
+        Light sun;
+        sun.name = "Sun";
+        sun.type = LightType::Directional;
+        sun.color = glm::vec3(1.0f, 0.95f, 0.80f);
+        sun.intensity = 3.0f;
+        sun.direction = glm::normalize(glm::vec3(-0.3f, -1.0f, -0.3f));
+        lights.push_back(sun);
+        save();
+    }
+}

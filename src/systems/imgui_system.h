@@ -45,6 +45,7 @@ public:
 
     void renderBotHealthBars(const std::vector<std::shared_ptr<Character>>& bots, const glm::mat4& view, const glm::mat4& projection,unsigned int screenWidth,unsigned int screenHeight);
 
+    void onLevelChanged();
 private:
         
     bool worldToScreen(const glm::vec3& worldPos,const glm::mat4& viewProj,unsigned int screenW, unsigned int screenH,glm::vec2& out);

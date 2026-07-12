@@ -18,6 +18,7 @@ struct SpawnPoint
     ChessPieceType pieceType;
     int            team        = 0;      
     float          respawnDelay = 5.0f;  
+    int            respawnsRemaining = -1;  
 
     std::vector<glm::vec3> patrolPoints; 
     std::weak_ptr<Character> occupant;   
@@ -39,6 +40,7 @@ public:
     void update(float deltaTime);
     void spawnAll();
     size_t totalSpawnPoints() const { return m_points.size(); }
+    bool allSpawnsExhausted() const; 
 
 private:  
     std::vector<SpawnPoint> m_points;

@@ -14,12 +14,8 @@ void SpawnManager::spawnAt(SpawnPoint& sp)
     sp.occupant      = ch;
     sp.isOnCooldown  = false;
     sp.cooldown      = 0.0f;
-}
-                            
-void SpawnManager::spawnAll()
-{
-    for (auto& sp : m_points)
-        spawnAt(sp);
+    if (sp.respawnsRemaining > 0)
+        --sp.respawnsRemaining;
 }
 
 void SpawnManager::update(float dt)
@@ -28,10 +24,11 @@ void SpawnManager::update(float dt)
     {
         auto alive = sp.occupant.lock();
         if (alive && !alive->isDead())
+            continue;
+        if (sp.respawnsRemaining == 0)
             continue; 
         if (!sp.isOnCooldown)
         {
-            
             sp.isOnCooldown = true;
             sp.cooldown     = sp.respawnDelay;
         }
@@ -43,6 +40,27 @@ void SpawnManager::update(float dt)
         }
     }
 }
+
+bool SpawnManager::allSpawnsExhausted() const
+{
+    for (const auto& sp : m_points)
+    {
+        auto alive = sp.occupant.lock();
+        if (alive && !alive->isDead())
+            return false;
+        if (sp.respawnsRemaining != 0)
+            return false;
+    }
+    return true;
+}
+
+void SpawnManager::spawnAll()
+{
+    for (auto& sp : m_points)
+        spawnAt(sp);
+}
+
+
 
 std::vector<std::shared_ptr<Character>> SpawnManager::getLivingCharacters() const
 {

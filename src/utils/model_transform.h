@@ -44,10 +44,11 @@ public:
 
     bool blendAnimationsInitialized = false;
 
-    btRigidBody *getPhysicsBody(size_t modelIndex);
+btRigidBody *getPhysicsBody(size_t modelIndex);
     void applyImpulse(size_t modelIndex, const glm::vec3 &impulse);
     void applyForce(size_t modelIndex, const glm::vec3 &force);
     void applyTorque(size_t modelIndex, const glm::vec3 &torque);
+    void clear(); 
 
 private:
     glm::vec3 cameraOffset = glm::vec3(0.0f);

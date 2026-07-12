@@ -26,6 +26,15 @@ ModelTransform::~ModelTransform() {
     }
 }
 
+void ModelTransform::clear() {
+    for (const auto &physicsModel : physicsModels) {
+        if (physicsSystem && physicsModel.rigidBody) {
+            physicsSystem->removeRigidBody(physicsModel.rigidBody);
+        }
+    }
+    physicsModels.clear();
+}
+
 void ModelTransform::setTransform(size_t modelIndex, const glm::vec3 &position, const glm::vec3 &scale, float rotationAngle, const glm::vec3 &rotationAxis) {
     if (!modelLoader) {
         std::cerr << "ModelTransform::setTransform: ModelLoader is not initialized!" << std::endl;

@@ -243,11 +243,7 @@ void RenderSystem::CompositePass() {
     glEnable(GL_DEPTH_TEST);
 }
 
-
-void RenderSystem::setupModels() {
-
-}
-
+void RenderSystem::setupModels() { }
 
 void RenderSystem::setupShadowFramebuffer() {
     shadowShader = std::make_unique<Shader>("Shaders/shadow_vertex.glsl",
@@ -279,6 +275,7 @@ void RenderSystem::setupShadowFramebuffer() {
 }
 
 bool RenderSystem::initialize() {
+ 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     glEnable(GL_CULL_FACE);
@@ -294,7 +291,7 @@ bool RenderSystem::initialize() {
     bulletDebugDrawer->initBuffers();
     debugLineShader = std::make_unique<Shader>("Shaders/debug_line_vertex.glsl",
                                                "Shaders/debug_line_fragment.glsl");
-    setupHDRI("models/grasslands_sunset_4k.hdr");
+    setupHDRI("models\\grasslands_sunset_4k.hdr");
     bloomBlurShader = std::make_unique<Shader>("Shaders/brdf_vertex.glsl",
                                                "Shaders/bloom_blur_fragment.glsl");
     compositeShader = std::make_unique<Shader>("Shaders/brdf_vertex.glsl",
@@ -473,21 +470,17 @@ void RenderSystem::setupCrosshair() {
     const float g = crosshairGap;
     const float l = crosshairSize;
 
-    // Four short line segments (up/down/left/right) with a gap around dead
-    // center — classic FPS crosshair. Coordinates are in a "logical square"
-    // space; the vertex shader corrects for aspect ratio so all four arms
-    // read as equal pixel length regardless of window shape.
     const float verts[] = {
-        // vertical - top arm
+
         0.0f,  g,
         0.0f,  g + l,
-        // vertical - bottom arm
+
         0.0f, -g,
         0.0f, -(g + l),
-        // horizontal - right arm
+
          g, 0.0f,
          g + l, 0.0f,
-        // horizontal - left arm
+
         -g, 0.0f,
         -(g + l), 0.0f,
     };

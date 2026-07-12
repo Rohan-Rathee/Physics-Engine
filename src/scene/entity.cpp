@@ -4,3 +4,4 @@ Entity::Entity(const std::string& entityName)
 
     : name(entityName), active(true) {} 
 
+

@@ -9,13 +9,13 @@
 
 namespace
 {
-    // Hitscan weapon tuning — adjust to taste.
-    constexpr float kWeaponRange   = 200.0f; // max ray distance (world units)
-    constexpr float kWeaponDamage  = 20.0f;  // damage applied per hit
-    constexpr float kFireRate      = 0.15f;  // seconds between shots
-    constexpr float kEyeHeight     = 0.9f;   // ray origin height above feet
-    constexpr float kMuzzleOffset  = 0.6f;   // push origin forward so we don't hit our own collider
-    constexpr float kTracerLifetime = 0.05f; // how long m_lastShot* stays valid, for optional tracer rendering
+
+    constexpr float kWeaponRange   = 200.0f; 
+    constexpr float kWeaponDamage  = 20.0f;   
+    constexpr float kFireRate      = 0.15f;  
+    constexpr float kEyeHeight     = 0.9f;  
+    constexpr float kMuzzleOffset  = 0.6f;  
+    constexpr float kTracerLifetime = 0.05f; 
 }
 
 Character::Character(size_t modelIndex, 
@@ -42,7 +42,7 @@ Character::Character(size_t modelIndex,
         rigidBody->setUserPointer(static_cast<void*>(this));
 
     if (modelLoader)
-        baseScale = modelLoader->getModelScale(modelIndex); // cache before we ever touch it
+        baseScale = modelLoader->getModelScale(modelIndex);
 }
 
 glm::vec3 Character::getPosition() const 
@@ -70,6 +70,14 @@ void Character::prePhysicsUpdate(float deltaTime)
 { 
     if (!rigidBody || !controller) 
         return; 
+
+    if (isDead())
+    {
+        rigidBody->setLinearVelocity(btVector3(0, 0, 0));
+        rigidBody->setAngularVelocity(btVector3(0, 0, 0));
+        return;
+    }
+
     ControlInput input = controller->getInput(deltaTime, getPosition()); 
     syncGroundedState(); 
     applyMovement(input, deltaTime); 
@@ -83,7 +91,8 @@ void Character::prePhysicsUpdate(float deltaTime)
             shootTimer = glm::max(shootTimer - deltaTime, 0.0f);
     }
         handleShooting(input, deltaTime);
-} 
+}
+
 void Character::postPhysicsUpdate(float deltaTime) 
 { 
     if (!rigidBody) 
@@ -271,7 +280,7 @@ void Character::handleShooting(const ControlInput& input, float deltaTime)
  
     const btCollisionObject* hitObject = rayCallback.m_collisionObject;
     if (hitObject == rigidBody)
-        return; // safety guard, shouldn't happen given the muzzle offset
+        return; 
  
     Character* victim = static_cast<Character*>(hitObject->getUserPointer());
     if (!victim || victim == this || victim->isDead())

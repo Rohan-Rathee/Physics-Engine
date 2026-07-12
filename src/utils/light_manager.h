@@ -63,12 +63,12 @@ struct Light {
     float outerCutoff = 17.5f;
     bool editorSelected = false;
 };
-
 class LightManager {
 public:
     explicit LightManager(const std::string &jsonPath = "lights.json");
     void load();
     void save() const;
+    void loadFromFile(const std::string &jsonPath);
     int addLight(const Light &light = Light{});
     void removeLight(int index);
     void duplicateLight(int index);
@@ -78,7 +78,8 @@ public:
     void uploadToShader(Shader &shader) const;
     std::vector<Light> lights;
 
+    const std::string &currentPath() const { return m_jsonPath; } 
+
 private:
     std::string m_jsonPath;
 };
-
