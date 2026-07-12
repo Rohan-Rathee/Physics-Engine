@@ -27,6 +27,7 @@ void ChessArenaGame::buildLevelDefs() {
                                       .pieceType = ChessPieceType::Rook,
                                       .team = 1,
                                       .respawnDelay = 3.0f,
+                                      .respawnsRemaining = -1,
                                       .patrolPoints = {glm::vec3(-5, 0, 18), glm::vec3(-5, 0, -18)}});
         level2.spawnPoints.push_back({.position = glm::vec3(5.0f, 1.0f, 18.0f),
                                       .pieceType = ChessPieceType::Queen,

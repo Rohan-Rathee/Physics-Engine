@@ -12,7 +12,7 @@ void InputSystem::mouseCallback(GLFWwindow *window, double xpos, double ypos) {
     if (ImGui::GetIO().WantCaptureMouse)
         return;
     if (!instance)
-        return; 
+        return;
     if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL)
         return;
     if (ImGui::GetIO().WantCaptureMouse)
