@@ -13,3 +13,5 @@ vcpkg/
 decentralized/ 
 vcpkg_installed/ 
 models/ENV/
+.wingman
+.gitignore

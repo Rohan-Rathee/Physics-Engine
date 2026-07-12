@@ -13,10 +13,8 @@
  * Hr 15 tried instancing, was not really neaded partially removed 
  * Hr 18 implemented height map import (still has an exe on github) but not really needed, removed
  * 
- * Hr 18 going to refactor the engine into a more modular architecture with systems and utils, and a core engine class to manage them all. (this is where the engine architecture was segregated into systems and utils)
- * 
- * (OFC the oldest file here, but early on while I was still learning C++ and OpenGL, this became thousands of lines long)
- *  
+ * Hr 18 going to refactor the engine into a more modular architecture with systems and utils, and a core engine class to manage them all. 
+  
  DEVLOG::
  Project started:  April 6 2026
  MAY 10 and 11: 
