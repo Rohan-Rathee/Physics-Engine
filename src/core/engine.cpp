@@ -2,7 +2,6 @@
 #include <iostream>
 #include <chrono>
 #include <imgui.h>
-
 double lastTime = glfwGetTime();
 int frameCount = 0;
 Camera* g_camera = nullptr;

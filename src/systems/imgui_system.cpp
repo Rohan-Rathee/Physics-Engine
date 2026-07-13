@@ -12,15 +12,17 @@ bool ImGuiSystem::initialize(GLFWwindow *window) {
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, false);
     ImGui_ImplOpenGL3_Init("#version 330");
-    initialized = true;
+    initialized = true; 
     return true;
 }
 
 void ImGuiSystem::beginFrame() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
+
     ImGui::NewFrame();
     ImGui::Begin("Engine Debug");
+
     ImGui::Text("Physics Engine");
     ImGui::Separator();
     ImGui::Checkbox("Demo Window", &showDemoWindow);

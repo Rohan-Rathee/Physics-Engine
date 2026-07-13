@@ -3,7 +3,7 @@
  * @brief Implements the core Engine class responsible for initializing,
  * updating, rendering, and shutting down the game engine.
  *
- * basically the backbone of the entire engine and is the conly file called from main.cpp.
+ * basically the backbone of the entire engine and is the only file called from main.cpp, edit: now game1 is also called from main to separate game and engine logic
  *
  *
  * first it takes ownership og all systmes and managers is requires, and initializes them in doing so. 
