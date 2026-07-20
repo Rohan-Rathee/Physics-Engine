@@ -22,37 +22,19 @@ bool IsColliderMesh(const std::string &name) {
     return name.rfind("Collider_", 0) == 0;
 }
 
-unsigned int CreateWhiteTexture() {
-    unsigned char whitePixel[] = {255, 255, 255, 255};
-
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    return textureID;
-}
 
 static unsigned int GetDefaultWhiteTexture() {
     static unsigned int whiteTexID = 0;
-    if (whiteTexID == 0)
-        whiteTexID = CreateWhiteTexture();
+    if (whiteTexID == 0) {
+        unsigned char whitePixel[] = {255, 255, 255, 255};
+        glGenTextures(1, &whiteTexID);
+        glBindTexture(GL_TEXTURE_2D, whiteTexID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
     return whiteTexID;
 }
-
-static texture MakeWhiteFallback(const std::string &typeName) {
-    texture t;
-    t.id = GetDefaultWhiteTexture();
-    t.type = typeName;
-    t.path = "__white_fallback__";
-    return t;
-}
-
 static unsigned int GetDefaultBlackTexture() {
     static unsigned int blackTexID = 0;
     if (blackTexID == 0) {
@@ -65,6 +47,14 @@ static unsigned int GetDefaultBlackTexture() {
     }
     return blackTexID;
 }
+static texture MakeWhiteFallback(const std::string &typeName) {
+    texture t;
+    t.id = GetDefaultWhiteTexture();
+    t.type = typeName;
+    t.path = "__white_fallback__";
+    return t;
+}
+
 
 unsigned int TextureFromEmbeddedData(const aiTexel *data, unsigned int width, unsigned int height, bool isSRGB = false) {
     unsigned int textureID;
@@ -80,7 +70,6 @@ unsigned int TextureFromEmbeddedData(const aiTexel *data, unsigned int width, un
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     return textureID;
 }
-
 unsigned int TextureFromFile(const char *path, const string &directory, const aiScene *scene = nullptr, bool isSRGB = false) {
 
     string filename = string(path);
@@ -169,29 +158,12 @@ unsigned int TextureFromFile(const char *path, const string &directory, const ai
     return textureID;
 }
 
+
 Mesh::Mesh(std::vector<vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures) {
     this->vertices = vertices;
     this->indices = indices;
     this->textures = textures;
     setupMesh();
-}
-
-void Mesh::draw(Shader &shader) {
-    shader.setVec3("materialBaseColor", material.baseColor);
-    shader.setFloat("materialMetallic", material.metallic);
-    shader.setFloat("materialRoughness", material.roughness);
-    shader.setFloat("materialAO", material.ao);
-
-    shader.setVec3("materialEmissive", material.emissive);
-    shader.setFloat("emissiveStrength", material.emissiveIntensity);
-
-    bindPBRTextures(shader);
-
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
-
-    glActiveTexture(GL_TEXTURE0);
 }
 
 void Mesh::setupMesh() {
@@ -226,135 +198,12 @@ void Mesh::setupMesh() {
     glBindVertexArray(0);
 }
 
-void SetVertexBoneData(vertex &vert, int boneID, float weight) {
-
-    for (int i = 0; i < MAX_BONE_INFLUENCE; i++) {
-        if (vert.boneIDs[i] == -1) {
-            vert.boneIDs[i] = boneID;
-            vert.weights[i] = weight;
-            return;
-        }
-    }
-
-    std::cerr << "Warning: More than " << MAX_BONE_INFLUENCE << " bones influencing a vertex. Extra influences will be ignored." << std::endl;
-}
 
 Model::Model(const std::string &path) {
     loadModel(path);
 }
-
 void Model::draw(Shader &shader) {
     draw(shader, glm::mat4(1.0f));
-}
-
-void Model::draw(Shader &shader, const glm::mat4 &parentTransform, bool renderColliders) {
-
-    for (auto &meshInstance : meshes) {
-
-        if (IsColliderMesh(meshInstance.name))
-            continue;
-        shader.setMat4(
-            "model",
-            parentTransform * meshInstance.transform);
-        meshInstance.mesh.draw(shader);
-    }
-}
-
-void ModelLoader::blendModelAnimations(
-    size_t modelIndex,
-    const std::vector<std::pair<unsigned int, float>> &layers) {
-
-    if (modelIndex >= models.size()) {
-        std::cerr << "ModelLoader::blendModelAnimations: invalid model index "
-                  << modelIndex << std::endl;
-        return;
-    }
-
-    if (layers.empty()) {
-        std::cerr << "ModelLoader::blendModelAnimations: layer list is empty, "
-                     "ignoring call."
-                  << std::endl;
-        return;
-    }
-
-    ModelData &data = models[modelIndex];
-    const aiScene *scene = data.model->getScene();
-
-    if (!scene || !scene->HasAnimations()) {
-        std::cerr << "ModelLoader::blendModelAnimations: model at index "
-                  << modelIndex << " has no animations." << std::endl;
-        return;
-    }
-
-    data.blendAnimations.clear();
-    data.blendAnimations.reserve(layers.size());
-
-    if (!data.animator)
-        data.animator = std::make_unique<Animator>();
-
-    std::vector<BlendLayer> animatorLayers;
-    animatorLayers.reserve(layers.size());
-
-    for (const auto &[animIndex, weight] : layers) {
-        if (animIndex >= scene->mNumAnimations) {
-            std::cerr << "ModelLoader::blendModelAnimations: animation index "
-                      << animIndex << " out of range (model has "
-                      << scene->mNumAnimations << " animations). "
-                                                  "Skipping this layer."
-                      << std::endl;
-            continue;
-        }
-
-        data.blendAnimations.push_back(
-            std::make_unique<Animation>(scene, data.model.get(), animIndex));
-
-        BlendLayer layer;
-        layer.animation = data.blendAnimations.back().get();
-        layer.weight = weight;
-        layer.time = 0.0f;
-
-        animatorLayers.push_back(layer);
-    }
-
-    if (animatorLayers.empty()) {
-        std::cerr << "ModelLoader::blendModelAnimations: no valid layers "
-                     "could be built."
-                  << std::endl;
-        return;
-    }
-
-    data.animator->SetBlendLayers(std::move(animatorLayers));
-
-    data.animation.reset(
-        new Animation(scene, data.model.get(),
-                      layers[0].first));
-}
-
-void ModelLoader::setBlendWeights(size_t modelIndex, const std::vector<float> &weights) {
-    if (modelIndex >= models.size() || !models[modelIndex].animator)
-        return;
-
-    Animator &animator = *models[modelIndex].animator;
-    for (size_t i = 0; i < weights.size(); i++)
-        animator.SetLayerWeight(i, weights[i]);
-}
-
-size_t ModelLoader::getModelCount() const { return models.size();}
-ModelLoader::ModelData &ModelLoader::getModel(size_t index) {return models.at(index);}
-const ModelLoader::ModelData &ModelLoader::getModel(size_t index) const {return models.at(index);}
-
-
-void Model::draw(Shader &shader, const glm::mat4 &parentTransform, bool renderColliders, bool skipMeshTransform) {
-
-    for (auto &meshInstance : meshes) {
-        if (IsColliderMesh(meshInstance.name))
-            continue;
-        glm::mat4 modelMatrix = skipMeshTransform
-                                    ? parentTransform
-                                    : parentTransform * meshInstance.transform;
-        shader.setMat4("model", modelMatrix);
-        meshInstance.mesh.draw(shader);
-    }
 }
 
 void Model::draw(Shader &shader, const glm::mat4 &parentTransform, const std::vector<glm::mat4> &boneMatrices, bool renderColliders) {
@@ -375,7 +224,7 @@ void Model::draw(Shader &shader, const glm::mat4 &parentTransform, const std::ve
                 locations[i] = glGetUniformLocation(shader.ID, name.c_str());
             }
         }
-        
+
         for (size_t i = 0; i < boneMatrices.size(); i++)
             glUniformMatrix4fv(locations[i], 1, GL_FALSE, &boneMatrices[i][0][0]);
 
@@ -385,6 +234,63 @@ void Model::draw(Shader &shader, const glm::mat4 &parentTransform, const std::ve
 
     draw(shader, parentTransform, renderColliders, isAnimated);
 }
+void Model::draw(Shader &shader, const glm::mat4 &parentTransform, bool renderColliders, bool skipMeshTransform) {
+
+    for (auto &meshInstance : meshes) {
+        if (IsColliderMesh(meshInstance.name))
+            continue;
+        glm::mat4 modelMatrix = skipMeshTransform
+                                    ? parentTransform
+                                    : parentTransform * meshInstance.transform;
+        shader.setMat4("model", modelMatrix);
+        meshInstance.mesh.draw(shader);
+    }
+}
+void Model::draw(Shader &shader, const glm::mat4 &parentTransform, bool renderColliders) {
+
+    for (auto &meshInstance : meshes) {
+
+        if (IsColliderMesh(meshInstance.name))
+            continue;
+        shader.setMat4(
+            "model",
+            parentTransform * meshInstance.transform);
+        meshInstance.mesh.draw(shader);
+    }
+}
+void Mesh::draw(Shader &shader) {
+    shader.setVec3("materialBaseColor", material.baseColor);
+    shader.setFloat("materialMetallic", material.metallic);
+    shader.setFloat("materialRoughness", material.roughness);
+    shader.setFloat("materialAO", material.ao);
+
+    shader.setVec3("materialEmissive", material.emissive);
+    shader.setFloat("emissiveStrength", material.emissiveIntensity);
+
+    bindPBRTextures(shader);
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    glActiveTexture(GL_TEXTURE0);
+}
+
+
+
+void SetVertexBoneData(vertex &vert, int boneID, float weight) {
+
+    for (int i = 0; i < MAX_BONE_INFLUENCE; i++) {
+        if (vert.boneIDs[i] == -1) {
+            vert.boneIDs[i] = boneID;
+            vert.weights[i] = weight;
+            return;
+        }
+    }
+
+    std::cerr << "Warning: More than " << MAX_BONE_INFLUENCE << " bones influencing a vertex. Extra influences will be ignored." << std::endl;
+}
+
 
 btCollisionShape *Model::buildConvexHullCollider() {
 
@@ -565,6 +471,10 @@ btCollisionShape *Model::buildCapsuleColliderFromMesh() {
     return capsule;
 }
 
+
+size_t ModelLoader::getModelCount() const { return models.size(); }
+ModelLoader::ModelData &ModelLoader::getModel(size_t index) { return models.at(index); }
+const ModelLoader::ModelData &ModelLoader::getModel(size_t index) const { return models.at(index); }
 glm::vec3 ModelLoader::getModelScale(size_t modelIndex) const {
     if (modelIndex >= models.size())
         return glm::vec3(1.0f);
@@ -574,6 +484,8 @@ glm::vec3 ModelLoader::getModelScale(size_t modelIndex) const {
         glm::length(glm::vec3(m[1])),
         glm::length(glm::vec3(m[2])));
 }
+
+
 
 void Model::loadModel(const std::string &path) {
     importer = std::make_unique<Assimp::Importer>();
@@ -658,137 +570,6 @@ void Model::processNode(aiNode *node, const aiScene *scene, glm::mat4 parentTran
 
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
         processNode(node->mChildren[i], scene, transform);
-    }
-}
-
-void Model::ExtractBoneWeights(std::vector<vertex> &vertices, aiMesh *mesh) {
-    for (unsigned int i = 0; i < mesh->mNumBones; i++) {
-        aiBone *bone = mesh->mBones[i];
-        std::string boneName(bone->mName.C_Str());
-
-        if (boneInfoMap.find(boneName) == boneInfoMap.end()) {
-            BoneInfo boneInfo;
-            boneInfo.id = boneCounter++;
-            boneInfo.offset = aiMatrix4x4ToGlm(bone->mOffsetMatrix);
-            boneInfoMap[boneName] = boneInfo;
-        }
-
-        int boneID = boneInfoMap[boneName].id;
-
-        for (unsigned int j = 0; j < bone->mNumWeights; j++) {
-            unsigned int vertexID = bone->mWeights[j].mVertexId;
-            float weight = bone->mWeights[j].mWeight;
-            SetVertexBoneData(vertices[vertexID], boneID, weight);
-        }
-    }
-}
-void Mesh::bindPBRTextures(Shader &shader) {
-
-    shader.setBool("hasNormalMap", false);
-    shader.setBool("hasMetallicRoughnessMap", false);
-    shader.setBool("hasAOMap", false);
-    shader.setBool("hasEmissiveMap", false);
-
-    bool filledDiffuse = false;
-    bool filledMR = false;
-    bool filledAO = false;
-    bool filledEmissive = false;
-
-    for (unsigned int i = 0; i < textures.size(); i++) {
-        const std::string &type = textures[i].type;
-        int unit = -1;
-
-        if (type == "diffuse" && material.useAlbedoMap) {
-            unit = 0;
-            shader.setInt("texture_diffuse1", unit);
-            filledDiffuse = true;
-        } else if (type == "normal" && material.useNormalMap && material.hasNormalMap) {
-            unit = 5;
-            shader.setInt("texture_normal1", unit);
-            shader.setBool("hasNormalMap", true);
-        } else if (type == "metallicRoughness" && material.useMetallicRoughnessMap && material.hasMetallicRoughnessMap) {
-            unit = 6;
-            shader.setInt("texture_metallicRoughness1", unit);
-            shader.setBool("hasMetallicRoughnessMap", true);
-            filledMR = true;
-        } else if (type == "ao" && material.useAOMap && material.hasAOMap) {
-            unit = 7;
-            shader.setInt("texture_ao1", unit);
-            shader.setBool("hasAOMap", true);
-            filledAO = true;
-        } else if (type == "emissive" && material.useEmissiveMap && material.hasEmissiveMap) {
-            unit = 8;
-            shader.setInt("texture_emissive1", unit);
-            shader.setBool("hasEmissiveMap", true);
-            filledEmissive = true;
-        } else {
-            continue;
-        }
-
-        if (unit >= 0) {
-            glActiveTexture(GL_TEXTURE0 + unit);
-            glBindTexture(GL_TEXTURE_2D, textures[i].id);
-        }
-    }
-
-    unsigned int white = GetDefaultWhiteTexture();
-
-    if (!filledDiffuse) {
-        shader.setInt("texture_diffuse1", 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, white);
-    }
-    if (!filledMR) {
-        shader.setInt("texture_metallicRoughness1", 6);
-        glActiveTexture(GL_TEXTURE6);
-        glBindTexture(GL_TEXTURE_2D, white);
-    }
-    if (!filledAO) {
-        shader.setInt("texture_ao1", 7);
-        glActiveTexture(GL_TEXTURE7);
-        glBindTexture(GL_TEXTURE_2D, white);
-    }
-    if (!filledEmissive) {
-        shader.setInt("texture_emissive1", 8);
-        glActiveTexture(GL_TEXTURE8);
-        glBindTexture(GL_TEXTURE_2D, GetDefaultBlackTexture());
-    }
-}
-
-void Model::ExtractTangentBitangent(std::vector<vertex> &vertices, aiMesh *mesh) {
-    if (mesh->HasTangentsAndBitangents()) {
-        for (unsigned int i = 0; i < vertices.size(); i++) {
-            vertices[i].tangent = glm::vec3(
-                mesh->mTangents[i].x,
-                mesh->mTangents[i].y,
-                mesh->mTangents[i].z);
-            vertices[i].bitangent = glm::vec3(
-                mesh->mBitangents[i].x,
-                mesh->mBitangents[i].y,
-                mesh->mBitangents[i].z);
-        }
-    } else {
-
-        for (unsigned int i = 0; i < vertices.size(); i += 3) {
-            glm::vec3 edge1 = vertices[i + 1].position - vertices[i].position;
-            glm::vec3 edge2 = vertices[i + 2].position - vertices[i].position;
-
-            glm::vec2 deltaUV1 = vertices[i + 1].texCoords - vertices[i].texCoords;
-            glm::vec2 deltaUV2 = vertices[i + 2].texCoords - vertices[i].texCoords;
-
-            float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y + 0.0001f);
-
-            glm::vec3 tangent(
-                f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x),
-                f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y),
-                f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z));
-
-            for (unsigned int j = 0; j < 3; j++) {
-                vertices[i + j].tangent = glm::normalize(tangent);
-                vertices[i + j].bitangent =
-                    glm::normalize(glm::cross(vertices[i + j].normal, tangent));
-            }
-        }
     }
 }
 
@@ -959,6 +740,137 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
     return result_mesh;
 }
 
+void Model::ExtractBoneWeights(std::vector<vertex> &vertices, aiMesh *mesh) {
+    for (unsigned int i = 0; i < mesh->mNumBones; i++) {
+        aiBone *bone = mesh->mBones[i];
+        std::string boneName(bone->mName.C_Str());
+
+        if (boneInfoMap.find(boneName) == boneInfoMap.end()) {
+            BoneInfo boneInfo;
+            boneInfo.id = boneCounter++;
+            boneInfo.offset = aiMatrix4x4ToGlm(bone->mOffsetMatrix);
+            boneInfoMap[boneName] = boneInfo;
+        }
+
+        int boneID = boneInfoMap[boneName].id;
+
+        for (unsigned int j = 0; j < bone->mNumWeights; j++) {
+            unsigned int vertexID = bone->mWeights[j].mVertexId;
+            float weight = bone->mWeights[j].mWeight;
+            SetVertexBoneData(vertices[vertexID], boneID, weight);
+        }
+    }
+}
+void Mesh::bindPBRTextures(Shader &shader) {
+
+    shader.setBool("hasNormalMap", false);
+    shader.setBool("hasMetallicRoughnessMap", false);
+    shader.setBool("hasAOMap", false);
+    shader.setBool("hasEmissiveMap", false);
+
+    bool filledDiffuse = false;
+    bool filledMR = false;
+    bool filledAO = false;
+    bool filledEmissive = false;
+
+    for (unsigned int i = 0; i < textures.size(); i++) {
+        const std::string &type = textures[i].type;
+        int unit = -1;
+
+        if (type == "diffuse" && material.useAlbedoMap) {
+            unit = 0;
+            shader.setInt("texture_diffuse1", unit);
+            filledDiffuse = true;
+        } else if (type == "normal" && material.useNormalMap && material.hasNormalMap) {
+            unit = 5;
+            shader.setInt("texture_normal1", unit);
+            shader.setBool("hasNormalMap", true);
+        } else if (type == "metallicRoughness" && material.useMetallicRoughnessMap && material.hasMetallicRoughnessMap) {
+            unit = 6;
+            shader.setInt("texture_metallicRoughness1", unit);
+            shader.setBool("hasMetallicRoughnessMap", true);
+            filledMR = true;
+        } else if (type == "ao" && material.useAOMap && material.hasAOMap) {
+            unit = 7;
+            shader.setInt("texture_ao1", unit);
+            shader.setBool("hasAOMap", true);
+            filledAO = true;
+        } else if (type == "emissive" && material.useEmissiveMap && material.hasEmissiveMap) {
+            unit = 8;
+            shader.setInt("texture_emissive1", unit);
+            shader.setBool("hasEmissiveMap", true);
+            filledEmissive = true;
+        } else {
+            continue;
+        }
+
+        if (unit >= 0) {
+            glActiveTexture(GL_TEXTURE0 + unit);
+            glBindTexture(GL_TEXTURE_2D, textures[i].id);
+        }
+    }
+
+    unsigned int white = GetDefaultWhiteTexture();
+
+    if (!filledDiffuse) {
+        shader.setInt("texture_diffuse1", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, white);
+    }
+    if (!filledMR) {
+        shader.setInt("texture_metallicRoughness1", 6);
+        glActiveTexture(GL_TEXTURE6);
+        glBindTexture(GL_TEXTURE_2D, white);
+    }
+    if (!filledAO) {
+        shader.setInt("texture_ao1", 7);
+        glActiveTexture(GL_TEXTURE7);
+        glBindTexture(GL_TEXTURE_2D, white);
+    }
+    if (!filledEmissive) {
+        shader.setInt("texture_emissive1", 8);
+        glActiveTexture(GL_TEXTURE8);
+        glBindTexture(GL_TEXTURE_2D, GetDefaultBlackTexture());
+    }
+}
+
+void Model::ExtractTangentBitangent(std::vector<vertex> &vertices, aiMesh *mesh) {
+    if (mesh->HasTangentsAndBitangents()) {
+        for (unsigned int i = 0; i < vertices.size(); i++) {
+            vertices[i].tangent = glm::vec3(
+                mesh->mTangents[i].x,
+                mesh->mTangents[i].y,
+                mesh->mTangents[i].z);
+            vertices[i].bitangent = glm::vec3(
+                mesh->mBitangents[i].x,
+                mesh->mBitangents[i].y,
+                mesh->mBitangents[i].z);
+        }
+    } else {
+
+        for (unsigned int i = 0; i < vertices.size(); i += 3) {
+            glm::vec3 edge1 = vertices[i + 1].position - vertices[i].position;
+            glm::vec3 edge2 = vertices[i + 2].position - vertices[i].position;
+
+            glm::vec2 deltaUV1 = vertices[i + 1].texCoords - vertices[i].texCoords;
+            glm::vec2 deltaUV2 = vertices[i + 2].texCoords - vertices[i].texCoords;
+
+            float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y + 0.0001f);
+
+            glm::vec3 tangent(
+                f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x),
+                f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y),
+                f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z));
+
+            for (unsigned int j = 0; j < 3; j++) {
+                vertices[i + j].tangent = glm::normalize(tangent);
+                vertices[i + j].bitangent =
+                    glm::normalize(glm::cross(vertices[i + j].normal, tangent));
+            }
+        }
+    }
+}
+
 
 std::vector<texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, const std::string &typeName) {
     std::vector<texture> textures;
@@ -991,7 +903,6 @@ std::vector<texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
     }
     return textures;
 }
-
 
 void ModelLoader::loadModel(const std::string &modelPath, const glm::vec3 &position, const glm::vec3 &scale) {
 
@@ -1090,6 +1001,83 @@ void ModelLoader::updateAnimations(float deltaTime) {
 
 bool ModelLoader::hasAnimation(size_t modelIndex) const {
     return modelIndex < models.size() && models[modelIndex].animator != nullptr;
+}
+
+void ModelLoader::blendModelAnimations(size_t modelIndex, const std::vector<std::pair<unsigned int, float>> &layers) {
+
+    if (modelIndex >= models.size()) {
+        std::cerr << "ModelLoader::blendModelAnimations: invalid model index "
+                  << modelIndex << std::endl;
+        return;
+    }
+
+    if (layers.empty()) {
+        std::cerr << "ModelLoader::blendModelAnimations: layer list is empty, "
+                     "ignoring call."
+                  << std::endl;
+        return;
+    }
+
+    ModelData &data = models[modelIndex];
+    const aiScene *scene = data.model->getScene();
+
+    if (!scene || !scene->HasAnimations()) {
+        std::cerr << "ModelLoader::blendModelAnimations: model at index "
+                  << modelIndex << " has no animations." << std::endl;
+        return;
+    }
+
+    data.blendAnimations.clear();
+    data.blendAnimations.reserve(layers.size());
+
+    if (!data.animator)
+        data.animator = std::make_unique<Animator>();
+
+    std::vector<BlendLayer> animatorLayers;
+    animatorLayers.reserve(layers.size());
+
+    for (const auto &[animIndex, weight] : layers) {
+        if (animIndex >= scene->mNumAnimations) {
+            std::cerr << "ModelLoader::blendModelAnimations: animation index "
+                      << animIndex << " out of range (model has "
+                      << scene->mNumAnimations << " animations). "
+                                                  "Skipping this layer."
+                      << std::endl;
+            continue;
+        }
+
+        data.blendAnimations.push_back(
+            std::make_unique<Animation>(scene, data.model.get(), animIndex));
+
+        BlendLayer layer;
+        layer.animation = data.blendAnimations.back().get();
+        layer.weight = weight;
+        layer.time = 0.0f;
+
+        animatorLayers.push_back(layer);
+    }
+
+    if (animatorLayers.empty()) {
+        std::cerr << "ModelLoader::blendModelAnimations: no valid layers "
+                     "could be built."
+                  << std::endl;
+        return;
+    }
+
+    data.animator->SetBlendLayers(std::move(animatorLayers));
+
+    data.animation.reset(
+        new Animation(scene, data.model.get(),
+                      layers[0].first));
+}
+
+void ModelLoader::setBlendWeights(size_t modelIndex, const std::vector<float> &weights) {
+    if (modelIndex >= models.size() || !models[modelIndex].animator)
+        return;
+
+    Animator &animator = *models[modelIndex].animator;
+    for (size_t i = 0; i < weights.size(); i++)
+        animator.SetLayerWeight(i, weights[i]);
 }
 
 const std::vector<glm::mat4> &ModelLoader::getBoneMatrices(size_t modelIndex) const {
