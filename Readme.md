@@ -1,8 +1,8 @@
-# Physics Engine
+# Totally <sub><sup><sub><sup><sub>in</sup></sup></sub></sup></sub>Accurate Game Simulator
 
 ### A C++ OpenGL game engine Built in pure CPP, using GLFW, ASSIMP, Bullet Physics
 
-For the purpose of simplicity, i'll use .cpp and ignore .h (with defnitions), unless explicitly i mention something. and i am new to all this readme creating and stuff, so forgive me if i go too deep, or too basic. Before the first refactor, all my game logic sat in a single file, no longer the case after implementing physics, or even ig model loader (a little after its creation actually)
+Ok, sooo, i'll be use .cpp and ignore .h (with defnitions), unless explicitly i mention something. and I am new to all this readme creating and stuff, so forgive me if i go too deep, or too basic. Before the first refactor, all my game logic sat in a single file, no longer the case after implementing physics, or even ig model loader (a little after its creation actually)
 
 The starting file is main.cpp, and calls upon 2 files, engine and game. This fairly recent change(in july itself) has been implemented to separate the engine and game logic, so as to make the engine able to run and create any game with minimal changes. The engine is constructed, then the game object, followed by initialization of the engine with the game as a parameter, and is then run, fairly basic stuff, and will omit such obvious file definitions from now on.
 
@@ -126,7 +126,8 @@ End result is you get all this during initilization itself:
 Scene owns models, Models own collision shapes, meshes and bonemaps, meshes own a vector list of  PBR textures, a list of vertices, and later on, has somewhat of an ownership of the buffer and array objects. The vertex owns a lot of data, from positions and texture coordinates, to bone weights for animation.
 
 model loader's load model
-''' void Model::loadModel(const std::string &path) {
+```
+void Model::loadModel(const std::string &path) {
 importer = std::make_unique[Assimp::Importer](Assimp::Importer)();
 unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace |
 aiProcess_JoinIdenticalVertices | aiProcess_SortByPType;
@@ -146,10 +147,10 @@ directory = path.substr(0, path.find_last_of('/'));
 processNode(scene->mRootNode, scene, glm::mat4(1.0f));
 computeBounds();
 }
-'''
+```
 
 process nodes FIFO node loading for individual objects
-'''
+```
 void Model::processNode(aiNode *node, const aiScene *scene, glm::mat4 parentTransform) {
 glm::mat4 transform = parentTransform * aiMatrix4x4ToGlm(node->mTransformation);
 
@@ -166,10 +167,10 @@ for (unsigned int i = 0; i < node->mNumChildren; i++) {
     processNode(node->mChildren[i], scene, transform);
 }
 }
-'''
+```
 
 Final process mesh to process vertices one at a time
-'''
+```
 Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 std::vector<vertex> vertices;
 std::vector<unsigned int> indices;
@@ -224,7 +225,7 @@ for (const auto &t : textures) {
 
 return result_mesh;
 }
-'''
+```
 
 All this is in ram as cpp objects, accessable by CPU but not quite by GPU yet.
 
@@ -244,7 +245,7 @@ Once all this is done, the rendering is done as follows: the render binds the me
 
 one good example of this is the setup mesh from the modelloader
 
-'''
+```
 void Mesh::setupMesh() {
 
 //The 3 objects:
@@ -283,11 +284,10 @@ glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(vertex),
                       (void *)offsetof(vertex, bitangent));
 glBindVertexArray(0);
 }
-'''
+```
 ^^^ during initilization,
 followed by multiple
-'''modelShader-> set<type>(<>,...);
-'''
+```modelShader-> set<type>(<>,...);```
 calls every frame and a draw call
 
 draw system is placed rather neatly together in the modelLoader from line 209 and 261, and is overloaded to handel animations, colliders, ghosts, and general draw time transfrom skipping
@@ -337,7 +337,7 @@ $$
 while the specular reflectance at normal incidence is computed as
 
 $$
-F_0=\operatorname{mix}(0.04,\ \text{Albedo},\ \text{Metallic})
+F_0=\text{mix}(0.04,\ \text{Albedo},\ \text{Metallic})
 $$
 
 This means dielectric materials retain both diffuse and specular reflections, whereas metallic materials gradually shift almost all reflected energy into the specular term. The shader computes **D**, **G**, and **F** independently before combining them into the Cook-Torrance BRDF, after which direct lighting, image-based lighting (IBL), shadows, ambient occlusion, emissive lighting, and fog are applied to produce the final fragment colour.
