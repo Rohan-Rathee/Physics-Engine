@@ -292,6 +292,16 @@ calls every frame and a draw call
 
 draw system is placed rather neatly together in the modelLoader from line 209 and 261, and is overloaded to handel animations, colliders, ghosts, and general draw time transfrom skipping
 
+#### Entering 3D
+
+Before we enter the glorious PBR, every vertex has to go from a 3d coordinate to a actual point on the screen. And it can just use that coordinate and clip one of those, or we would get someting like an orthogonal perspective, and even after the perspective, we must cull sides based on different parameters(currently distance culling and depth test culling adn backface culling)
+
+The renderer gets 3 matricies that help render the model, 4x4 matricies to accomodate all position rotation and scale in one matrix. All must have a correct order of setting translate rotate and scale
+
+Model Matrix comes from the model loader and is a per-mesh-instance transform baked in during processing of the node. It tells the transform of that specific model/instance.
+
+View matrix comes from the camera so technically, the camera never moves, the rest of the, well everything, move around the camera.
+
 #### PBR Renderer
 
 The main renderer uses a Cook-Torrance BRDF with the GGX microfacet model.
@@ -347,6 +357,100 @@ Earlier, I had implemented Phong lighting, but PBR was a day night difference af
 One would notice, we dont just have a single vertex and fragment shader pair, but multiple. this it due to the PBR requiring us to sample the environment for the reflective and/or brightning of the objects based on the HDRI environment that is in our skybox.
 
 ### The Physics
+
+The Physics run on bullet, that has been wrapped in Physics System in a minimal way. It owns the 4 parts that make the bullet library funtion:
+1. The ColliisionConfig
+2. Dispatcher
+3. broadpahse
+4. Impulse based solver
+
+all this is done throught the dynamicsWorld, which is the middleman between  the system and the rest of the project.
+
+```
+bool PhysicsSystem::initialize(const glm::vec3& gravityVec) {
+    collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
+    dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfig.get());
+    broadphase = std::make_unique<btDbvtBroadphase>();
+    solver = std::make_unique<btSequentialImpulseConstraintSolver>();
+    dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(
+        dispatcher.get(), broadphase.get(), solver.get(), collisionConfig.get()
+    );
+    setGravity(gravityVec);
+    return true;
+}
+```
+
+Since Phsysics behaves identically regardless of frametime, i have used an accumulator, which works by incrementing the accumulator the time passed since the last sim step, and the accumulator basically holds the unsimulated time.
+
+```
+void PhysicsSystem::update(float deltaTime) {
+    accumulator += deltaTime;
+    while (accumulator >= fixedStep) {
+        dynamicsWorld->stepSimulation(fixedStep, 0);
+        accumulator -= fixedStep;
+    }
+}
+```
+
+As soon as the unsimulated time exceeds fixed step, the sim runs forward exactly the fixed step and decrements the acc by the fixed step, multiple times as long as the accumulated time still exceeds the fixed step. This ensures the sim is independent of the frame rate of the engine.
+
+the Rigid bodies are created by the createRigidBody, taking in mass, a collision body created in the model loader (convex hull, compound box, triangle mesh or capsule, depending on what the model needs), spawn position and a restitution value. The ground at zero mass is static with no inertial calculations. All other physics constances like friction and dampening are hardcoded defaults for now.
+
+```
+btRigidBody* PhysicsSystem::createRigidBody(float mass, btCollisionShape* shape,
+                                             const glm::vec3& position, float restitution) {
+    btTransform transform;
+    transform.setIdentity();
+    transform.setOrigin(btVector3(position.x, position.y, position.z));
+
+    btMotionState* motionState = new btDefaultMotionState(transform);
+    btVector3 localInertia(0, 0, 0);
+    if (mass != 0.0f) shape->calculateLocalInertia(mass, localInertia);
+
+    btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
+    btRigidBody* body = new btRigidBody(rbInfo);
+    body->setRestitution(restitution);
+    body->setFriction(0.5f);
+    body->setRollingFriction(0.01f);
+    body->setSpinningFriction(1.0f);
+    body->setDamping(0.5f, 0.1f);
+
+    dynamicsWorld->addRigidBody(body);
+    return body;
+}
+```
+
+Model Transform sits between the Physics sysetem and the Model Transform. At every frame, model transform pulls each body's transform, converts the quaternion to and angle axis pair and hands it off to the render system. 
+
+```
+void ModelTransform::applyPhysicsTransform(const PhysicsModelData &physicsModel) {
+    btTransform btTrans;
+    physicsModel.rigidBody->getMotionState()->getWorldTransform(btTrans);
+    // ... quaternion -> angle/axis conversion ...
+    setTransform(physicsModel.modelIndex, position, scale, angle, axis);
+}
+```
+
+The characters bypass modelTransform for their movement, and are only concerned with collsions, so a direct kinematic method of setting velocity directly when grounded and regular phyics when in air is utilised, as well as angular-velocity-based turning toward the aim direction rather than snapping rotation instantly. Shooting is also just a physics raycast (rayTest from muzzle to max range), with the hit rigid body's user pointer cast back to a Character* to apply damage — this is why every rigid body gets setUserPointer(this) in the constructor.
+
+### Input and Camera
+
+Camera.h is the oldest file, and whiles others were rewritten multiple times, this and the shader.h have remained mostly untouched. Its the classic learnOpenGl freefly camera while written while i was still learing and experimenting with opengl, working on only euler angles (Yaw and pitch) with no quaternions or roll.
+
+```
+void updateCameraVectors() {
+    glm::vec3 front;
+    front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+    front.y = sin(glm::radians(Pitch));
+    front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+    Front = glm::normalize(front);
+    Right = glm::normalize(glm::cross(Front, WorldUp));
+    Up    = glm::normalize(glm::cross(Right, Front));
+}
+```
+
+Every rotation, either by direct mouse look or by a snapping to 3rd person snapping, works by recomputing front up and right from Yaw and pitch, and then making the perspective matrix from that.
+
 
 Some inspirations for the project and engine architecture were taken from the following sources:
 
