@@ -300,9 +300,14 @@ The renderer gets 3 matricies that help render the model, 4x4 matricies to accom
 
 Model Matrix comes from the model loader and is a per-mesh-instance transform baked in during processing of the node. It tells the transform of that specific model/instance.
 
-View matrix comes from the camera so technically, the camera never moves, the rest of the, well everything, move around the camera.
+View matrix comes from the camera so technically, the camera never moves, the rest of the, well everything, moves around the camera reverse of where the camera is supposed to move. Is common to all models and the entire scene.
 
-#### PBR Renderer
+Projection matrix is assembled every frame and doesn't care much about the camera except for zoom (actually storing FOV),  and it the part that adds a feel of 3d using depth.
+near and far are ridiculously extreme as remenants of my heightmap based himalayan map mentioned in the lost hour logs and since removed. Peformance gain by changing these values is minimal because of distance culling as well as now simplicity of the model as compared to the himalyan heightmaps
+
+Both view and projection get computed once per frame in the engine loop and handed down into renderSystem->render(*camera, currentTime, view, projection), from where they eventually reach the vertex shader as uniforms. Inside the shader itself the actual "make it 3D" moment is just the standard gl_Position = projection * view * model * vec4(position, 1.0).
+
+#### PBR Renderer 
 
 The main renderer uses a Cook-Torrance BRDF with the GGX microfacet model.
 After recieving stuff as the objects, the control is passed on to the shaders.
@@ -435,6 +440,7 @@ The characters bypass modelTransform for their movement, and are only concerned 
 
 ### Input and Camera
 
+#### Camera
 Camera.h is the oldest file, and whiles others were rewritten multiple times, this and the shader.h have remained mostly untouched. Its the classic learnOpenGl freefly camera while written while i was still learing and experimenting with opengl, working on only euler angles (Yaw and pitch) with no quaternions or roll.
 
 ```
@@ -450,6 +456,37 @@ void updateCameraVectors() {
 ```
 
 Every rotation, either by direct mouse look or by a snapping to 3rd person snapping, works by recomputing front up and right from Yaw and pitch, and then making the perspective matrix from that.
+
+#### Third person camera rig
+
+ThirdPersonCameraRig is comeletely separated from the camera and the camera is "dumb"ed down. The rig converts the camera's own Yaw/Pitch into an orbit direction, then places the camera at followDistance back from a point followHeight above the target:
+
+```glm::vec3 orbitDir(
+    cos(yawRad) * cos(pitchRad),
+    sin(pitchRad),
+    sin(yawRad) * cos(pitchRad)
+);
+glm::vec3 targetPoint = modelPos + vehicleUp * followHeight;
+glm::vec3 desiredPos  = targetPoint - orbitDir * followDistance;
+```
+postion and facing the both eased towards the target instead of snapped, but is currently almost instant. first it computes the front, then manually rederives the right and up, and writes back pitch from asin(Front.y) to prevent drifting due to the use of only Front instead of going through updateCameraVectors().
+
+his only runs when !inputSystem->isSpectatorMode() and a camera target exists (see Engine::run()), so spectator mode and third-person follow take turns owning the camera and avoid conflict.
+
+#### Input system
+
+Like camera.h, input system is also kept dumb and exists only as a hardware to signal translations, with jumppressed and firepressed kept only to add a toggle kind of a thing.
+
+Every callback forwards to ImGui first (ImGui_ImplGlfw_...Callback) before checking io.WantCaptureMouse/WantCaptureKeyboard and bailing if ImGui wants the input so editor UI always gets first refusal on clicks and drags.
+
+```
+void InputSystem::mouseCallback(GLFWwindow *window, double xpos, double ypos) {
+    ImGui_ImplGlfw_CursorPosCallback(window, xpos, ypos);
+    if (ImGui::GetIO().WantCaptureMouse) return;
+    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) return;
+    ...
+}
+```
 
 
 Some inspirations for the project and engine architecture were taken from the following sources:
