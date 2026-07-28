@@ -14,7 +14,7 @@ void ChessArenaGame::buildLevelDefs() {
                                       .pieceType = ChessPieceType::Queen,
                                       .team = 1,
                                       .respawnDelay = 3.0f,
-                                      .respawnsRemaining = 1,
+                                      .respawnsRemaining = -1,
                                       .patrolPoints = {glm::vec3(0, 0, 18), glm::vec3(0, 0, -18)}});
         levels.push_back(std::move(level1));
     }
@@ -203,7 +203,7 @@ void ChessArenaGame::loadLevel(int index) {
     modelLoader->loadModel(level.mapModelPath, glm::vec3(0.0f), glm::vec3(1.0f));
     size_t mapIndex = modelLoader->getModelCount() - 1;
     modelTransform->initializePhysicsBody(
-        mapIndex, 0.0f, modelLoader->getModel(mapIndex).model->buildCompoundBoxCollider(), 0.2f);
+        mapIndex, 0.0f, modelLoader->getModel(mapIndex).model->buildTriangleMeshCollider(), 0.2f);
 
     spawnManager = std::make_unique<SpawnManager>(
         [this](const SpawnPoint &sp) -> std::shared_ptr<Character> {
