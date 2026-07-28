@@ -14,4 +14,4 @@ decentralized/
 vcpkg_installed/ 
 models/ENV/
 .wingman
-.gitignore
+Physics-Engine-Package
