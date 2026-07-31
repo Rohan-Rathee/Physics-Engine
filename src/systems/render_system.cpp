@@ -338,6 +338,7 @@ void RenderSystem::setupHDRI(const std::string &hdrPath) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     stbi_image_free(data);
 
+
     std::cout << "[HDRI] Loaded " << hdrPath << " (" << w << "x" << h << ")" << std::endl;
     glGenFramebuffers(1, &captureFBO);
     glGenRenderbuffers(1, &captureRBO);
