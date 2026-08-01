@@ -19,7 +19,7 @@
 
 int main()
 {
-    Engine engine(1280, 720, "My Engine");
+    Engine engine(1920, 1080, "My Engine");
     ChessArenaGame game;
 
     if (!engine.initialize(&game))

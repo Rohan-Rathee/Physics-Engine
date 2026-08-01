@@ -25,7 +25,7 @@ class ChessPieceController : public IController
 public:
     ChessPieceController(ChessPieceType type,
                          std::vector<glm::vec3> patrolPoints,
-                         float moveSpeed = 4.0f);
+                         float moveSpeed = 2.0f);
 
     void setTarget(const Character* target) { m_target = target; }
     ChessPieceType getPieceType() const { return m_type; }

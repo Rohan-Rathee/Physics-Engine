@@ -65,7 +65,7 @@ private:
     bool blendInitialized = false; 
     unsigned int runAnimIndex;  
     unsigned int idleAnimIndex;
-    float moveSpeed = 12.0f; 
+    float moveSpeed = 8.0f; 
     float acceleration = 12.0f; 
     float deceleration = 4.0f; 
     float jumpImpulse = 500.0f; 

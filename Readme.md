@@ -9,6 +9,15 @@ Before the first refactor, all my game logic sat in a single file, no longer the
 
 The starting file is `main.cpp`, and it calls upon two files, engine and game. This fairly recent change(in july itself) has been implemented to separate the engine and game logic, so as to make the engine able to run and create any game with minimal changes. The engine is constructed, then the game object, followed by initialization of the engine with the game as a parameter, and is then run, fairly basic stuff, and will omit such obvious file definitions from now on.
 
+CONTROLS: 
+- WASD to move
+- space to shoot
+- p to show collision shapes 
+- tab to go to free fly camera
+- f1 was to free cursor to use UI editiors
+- left mouse click to shoot
+
+![](image.png)
 
 ## Features
 
