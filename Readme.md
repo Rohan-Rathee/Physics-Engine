@@ -3,6 +3,7 @@
 
 ### A C++ OpenGL game engine Built in pure CPP, using GLFW, ASSIMP, Bullet Physics
 
+Run by clicking on the bat file after unzipping the folder in the releases.
 Before diving in, a small note: throughout this README I'll primarily refer to the `.cpp` files and omit the corresponding `.h` files unless they're directly relevant. Most of the interesting implementation lives in the source files, so that keeps things a little easier to follow.This is also my first time writing a project README of this scale, so forgive me if I occasionally go into more detail than necessary, or explain something that's already obvious. 
 
 Before the first refactor, all my game logic sat in a single file, no longer the case after implementing physics, or even ig model loader (a little after its creation actually)
